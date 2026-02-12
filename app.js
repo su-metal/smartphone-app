@@ -148,7 +148,7 @@
           .from('profiles')
           .select('subscription_status')
           .eq('id', user.id)
-          .maybeSingle();
+          .single();
         profile = data || null;
         lastError = error || null;
         if (profile) break;
@@ -186,8 +186,9 @@
         elements.toSessionBtn.textContent = 'サブスク登録が必要です';
       }
     } catch (e) {
-      debugLog('Profile logic crash: ' + e.message);
-      elements.subscriptionStatusBadge.textContent = 'MEMBERSHIP: ERROR';
+      const msg = (e && e.message) ? e.message : String(e);
+      debugLog('Profile logic crash: ' + msg);
+      elements.subscriptionStatusBadge.textContent = `MEMBERSHIP: ERROR (${msg.slice(0, 18)})`;
       elements.subscriptionStatusBadge.className = 'status-inactive';
       elements.toSessionBtn.disabled = true;
       elements.toSessionBtn.textContent = '会員確認に失敗しました';
