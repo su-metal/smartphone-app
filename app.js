@@ -227,10 +227,17 @@
 
   async function handleSubscribe() {
     try {
+      const plan = 'yearly';
+      const locale = (navigator.language || 'en').toLowerCase();
+      const currency = locale.startsWith('ja') ? 'jpy' : 'usd';
       const { data, error } = await state.supabase.functions.invoke('create-checkout', {
         headers: { 'Content-Type': 'application/json' },
-        body: {}
+        body: { plan, currency }
       });
+      if (error) {
+        alert('決済URLの取得に失敗しました: ' + error.message);
+        return;
+      }
       if (data?.url) window.location.href = data.url;
       else alert('決済URLの取得に失敗しました。');
     } catch (e) { alert('決済の準備に失敗しました。'); }
