@@ -291,18 +291,24 @@
       const plan = 'yearly';
       const locale = (navigator.language || 'en').toLowerCase();
       const currency = locale.startsWith('ja') ? 'jpy' : 'usd';
-      const { data, error } = await state.supabase.functions.invoke('create-checkout', {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-checkout`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': SUPABASE_ANON_KEY
         },
-        body: { plan, currency }
+        body: JSON.stringify({ plan, currency })
       });
-      if (error) {
-        alert(t('checkout_url_failed') + ' ' + error.message);
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = payload?.error || `HTTP ${res.status}`;
+        alert(`${t('checkout_url_failed')} ${detail}`);
         return;
       }
-      if (data?.url) window.location.href = data.url;
+
+      if (payload?.url) window.location.href = payload.url;
       else alert(t('checkout_url_failed'));
     } catch (e) { alert(t('checkout_prepare_failed')); }
   }
