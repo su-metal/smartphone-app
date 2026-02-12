@@ -53,9 +53,11 @@
             <label for="password-input">PASSWORD</label>
             <input type="password" id="password-input" placeholder="••••••••">
           </div>
+          <p id="auth-guide-1" style="font-size:0.72rem; margin: 2px 0; opacity:0.85;">Create account is free.</p>
+          <p id="auth-guide-2" style="font-size:0.72rem; margin: 2px 0 14px; opacity:0.85;">Paid plan is required to start sessions.</p>
           <div class="auth-buttons">
             <button id="login-btn" class="btn primary">LOGIN</button>
-            <button id="signup-btn" class="btn secondary">REGISTER</button>
+            <button id="signup-btn" class="btn secondary">CREATE ACCOUNT</button>
           </div>
         </div>
         
@@ -200,6 +202,12 @@
       document.title = 'THE TOLL - スクワットチャレンジ';
       const sessionHelp = document.getElementById('session-help-text');
       if (sessionHelp) sessionHelp.textContent = 'PCに表示されたIDを入れてね';
+      const authGuide1 = document.getElementById('auth-guide-1');
+      const authGuide2 = document.getElementById('auth-guide-2');
+      const signupBtn = document.getElementById('signup-btn');
+      if (authGuide1) authGuide1.textContent = 'アカウント作成は無料です。';
+      if (authGuide2) authGuide2.textContent = 'セッション開始には有料プランが必要です。';
+      if (signupBtn) signupBtn.textContent = 'アカウント作成';
     }
 
     // 強制リセット関数
