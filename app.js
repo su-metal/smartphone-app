@@ -281,11 +281,21 @@
 
   async function handleSubscribe() {
     try {
+      const { data: sessionData } = await state.supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        alert('Please log in again before starting checkout.');
+        return;
+      }
+
       const plan = 'yearly';
       const locale = (navigator.language || 'en').toLowerCase();
       const currency = locale.startsWith('ja') ? 'jpy' : 'usd';
       const { data, error } = await state.supabase.functions.invoke('create-checkout', {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
         body: { plan, currency }
       });
       if (error) {
