@@ -136,6 +136,7 @@
     manageSubscriptionBtn: document.getElementById('manage-subscription-btn'),
     toSessionBtn: document.getElementById('to-session-btn'),
     logoutBtn: document.getElementById('logout-btn'),
+    sessionLogoutBtn: document.getElementById('session-logout-btn'),
 
     sessionScreen: document.getElementById('session-screen'),
     sessionInput: document.getElementById('session-input'),
@@ -1021,6 +1022,12 @@
     // イベントリスナー
     elements.googleLoginBtn.onclick = handleGoogleLogin;
     elements.logoutBtn.onclick = handleLogout;
+    if (elements.sessionLogoutBtn) {
+      elements.sessionLogoutBtn.onclick = async (e) => {
+        e.preventDefault();
+        await handleLogout();
+      };
+    }
     elements.subscribeBtn.onclick = handleSubscribe;
     if (elements.manageSubscriptionBtn) {
       elements.manageSubscriptionBtn.onclick = handleManageSubscription;
