@@ -10,6 +10,60 @@
   const APP_VERSION = 'v2.17 (Rescue Update)';
   const SUPABASE_URL = 'https://qcnzleiyekbgsiyomwin.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbnpsZWl5ZWtiZ3NpeW9td2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0Mjk2NzMsImV4cCI6MjA4NDAwNTY3M30.NlGUfxDPzMgtu_J0vX7FMe-ikxafboGh5GMr-tsaLfI';
+  const APP_LANG = new URLSearchParams(window.location.search).get('lang') === 'ja' ? 'ja' : 'en';
+  const I18N = {
+    en: {
+      logged_in_as: 'Logged in:',
+      membership_checking: 'Checking membership...',
+      membership_check_failed: 'Membership check failed',
+      go_to_session: 'Go to PC Session',
+      subscription_required: 'Paid plan required',
+      email_password_required: 'Please enter email and password.',
+      login_failed: 'Login failed: ',
+      login_network_error: 'Login failed: network error. Check Supabase connectivity/CORS.',
+      signup_failed: 'Signup failed: ',
+      signup_success_auto: 'Account created. Logging in automatically.',
+      signup_confirm_sent: 'Confirmation email sent.',
+      checkout_url_failed: 'Failed to get checkout URL.',
+      checkout_prepare_failed: 'Failed to prepare checkout.',
+      enter_session_id: 'Please enter a session ID.',
+      scanner_init_failed: 'Scanner init failed.',
+      camera_start_failed: 'Camera start failed.',
+      sending: 'Sending...',
+      session_expired: 'Session expired. Please log in again.',
+      send_failed: 'Send failed',
+      unlock_success: 'Unlocked successfully!',
+      session_not_found: 'Session not found',
+      ai_loading: 'Loading AI...',
+      confirm_cancel_training: 'Stop this training session?'
+    },
+    ja: {
+      logged_in_as: 'ログイン中:',
+      membership_checking: '会員確認中...',
+      membership_check_failed: '会員確認に失敗しました',
+      go_to_session: 'PC連携へ進む',
+      subscription_required: 'サブスク登録が必要です',
+      email_password_required: 'メールとパスワードを入力してください',
+      login_failed: 'ログイン失敗: ',
+      login_network_error: 'ログイン失敗: ネットワークエラーです。Supabase接続またはCORS設定を確認してください。',
+      signup_failed: '登録失敗: ',
+      signup_success_auto: 'アカウントを作成しました。自動ログインします。',
+      signup_confirm_sent: '確認メールを送信しました。',
+      checkout_url_failed: '決済URLの取得に失敗しました。',
+      checkout_prepare_failed: '決済の準備に失敗しました。',
+      enter_session_id: 'セッションIDを入力してください',
+      scanner_init_failed: 'スキャナー初期化失敗',
+      camera_start_failed: 'カメラ起動失敗',
+      sending: '送信中...',
+      session_expired: 'ログインセッションが切れています',
+      send_failed: '送信失敗',
+      unlock_success: 'アンロック成功！',
+      session_not_found: 'セッションなし',
+      ai_loading: 'AI読み込み中...',
+      confirm_cancel_training: 'トレーニングを中断しますか？'
+    }
+  };
+  const t = (key) => (I18N[APP_LANG] && I18N[APP_LANG][key]) || I18N.en[key] || key;
 
   // ============================================
   // 状態管理
@@ -124,7 +178,7 @@
   // ============================================
   async function updateUserInfo(user) {
     debugLog(`Updating info for: ${user.email}`);
-    elements.userDisplayEmail.textContent = `ログイン中: ${user.email}`;
+    elements.userDisplayEmail.textContent = `${t('logged_in_as')} ${user.email}`;
     elements.authForm.classList.add('hidden');
     elements.userInfo.classList.remove('hidden');
 
@@ -133,7 +187,7 @@
 
     // Strict gate: lock session entry until membership is confirmed.
     elements.toSessionBtn.disabled = true;
-    elements.toSessionBtn.textContent = '会員確認中...';
+    elements.toSessionBtn.textContent = t('membership_checking');
     elements.subscribeBtn.classList.add('hidden');
     elements.subscriptionStatusBadge.textContent = 'MEMBERSHIP: CHECKING';
     elements.subscriptionStatusBadge.className = 'status-inactive';
@@ -160,7 +214,7 @@
         elements.subscriptionStatusBadge.textContent = 'MEMBERSHIP: VERIFY FAILED';
         elements.subscriptionStatusBadge.className = 'status-inactive';
         elements.toSessionBtn.disabled = true;
-        elements.toSessionBtn.textContent = '会員確認に失敗しました';
+        elements.toSessionBtn.textContent = t('membership_check_failed');
         elements.subscribeBtn.classList.remove('hidden');
         return;
       }
@@ -176,14 +230,14 @@
       if (isActive) {
         elements.subscribeBtn.classList.add('hidden');
         elements.toSessionBtn.disabled = false;
-        elements.toSessionBtn.textContent = 'PC連携へ進む';
+        elements.toSessionBtn.textContent = t('go_to_session');
         if (elements.authScreen.classList.contains('active')) {
           setTimeout(() => showScreen('session-screen'), 500);
         }
       } else {
         elements.subscribeBtn.classList.remove('hidden');
         elements.toSessionBtn.disabled = true;
-        elements.toSessionBtn.textContent = 'サブスク登録が必要です';
+        elements.toSessionBtn.textContent = t('subscription_required');
       }
     } catch (e) {
       const msg = (e && e.message) ? e.message : String(e);
@@ -191,7 +245,7 @@
       elements.subscriptionStatusBadge.textContent = `MEMBERSHIP: ERROR (${msg.slice(0, 18)})`;
       elements.subscriptionStatusBadge.className = 'status-inactive';
       elements.toSessionBtn.disabled = true;
-      elements.toSessionBtn.textContent = '会員確認に失敗しました';
+      elements.toSessionBtn.textContent = t('membership_check_failed');
       elements.subscribeBtn.classList.remove('hidden');
     } finally {
       state._membershipCheckInFlight = false;
@@ -201,12 +255,12 @@
   async function handleLogin() {
     const email = elements.emailInput.value;
     const password = elements.passwordInput.value;
-    if (!email || !password) return alert('メールとパスワードを入力してください');
+    if (!email || !password) return alert(t('email_password_required'));
     try {
       const { error } = await state.supabase.auth.signInWithPassword({ email, password });
-      if (error) alert('ログイン失敗: ' + error.message);
+      if (error) alert(t('login_failed') + error.message);
     } catch (e) {
-      alert('ログイン失敗: ネットワークエラーです。Supabase接続またはCORS設定を確認してください。');
+      alert(t('login_network_error'));
       debugLog('Login network error: ' + (e?.message || e));
     }
   }
@@ -214,13 +268,13 @@
   async function handleSignup() {
     const email = elements.emailInput.value;
     const password = elements.passwordInput.value;
-    if (!email || !password) return alert('メールとパスワードを入力してください');
+    if (!email || !password) return alert(t('email_password_required'));
     const { error, data } = await state.supabase.auth.signUp({ 
       email, password, options: { emailRedirectTo: window.location.origin }
     });
-    if (error) alert('登録失敗: ' + error.message);
-    else if (data.session) alert('アカウントを作成しました。自動ログインします。');
-    else alert('確認メールを送信しました。');
+    if (error) alert(t('signup_failed') + error.message);
+    else if (data.session) alert(t('signup_success_auto'));
+    else alert(t('signup_confirm_sent'));
   }
 
   async function handleLogout() { await state.supabase.auth.signOut(); }
@@ -235,12 +289,12 @@
         body: { plan, currency }
       });
       if (error) {
-        alert('決済URLの取得に失敗しました: ' + error.message);
+        alert(t('checkout_url_failed') + ' ' + error.message);
         return;
       }
       if (data?.url) window.location.href = data.url;
-      else alert('決済URLの取得に失敗しました。');
-    } catch (e) { alert('決済の準備に失敗しました。'); }
+      else alert(t('checkout_url_failed'));
+    } catch (e) { alert(t('checkout_prepare_failed')); }
   }
 
   // ============================================
@@ -248,7 +302,7 @@
   // ============================================
   function startSession(sid, targetFromUrl) {
     const sessionId = (sid || elements.sessionInput.value).trim().toUpperCase();
-    if (!sessionId || sessionId.length < 4) return alert('セッションIDを入力してください');
+    if (!sessionId || sessionId.length < 4) return alert(t('enter_session_id'));
     
     state.sessionId = sessionId;
     state.squatCount = 0;
@@ -289,7 +343,7 @@
   }
 
   async function startQRScan() {
-    if (!state.html5QrCode) return alert("スキャナー初期化失敗");
+    if (!state.html5QrCode) return alert(t('scanner_init_failed'));
     elements.qrReaderContainer.classList.remove('hidden');
     try {
       await state.html5QrCode.start(
@@ -322,7 +376,7 @@
           startSession(sid, target);
         }, () => {}
       );
-    } catch (err) { alert("カメラ起動失敗"); elements.qrReaderContainer.classList.add('hidden'); }
+    } catch (err) { alert(t('camera_start_failed')); elements.qrReaderContainer.classList.add('hidden'); }
   }
 
   async function stopQRScan() {
@@ -340,11 +394,11 @@
 
   async function sendUnlockSignal() {
     elements.unlockBtn.disabled = true;
-    elements.unlockStatus.textContent = '送信中...';
+    elements.unlockStatus.textContent = t('sending');
     try {
       const { data: sessionData } = await state.supabase.auth.getSession();
       if (!sessionData?.session) {
-        elements.unlockStatus.textContent = '❌ ログインセッションが切れています';
+        elements.unlockStatus.textContent = `❌ ${t('session_expired')}`;
         elements.unlockBtn.disabled = false;
         return;
       }
@@ -352,19 +406,19 @@
       const sid = (state.sessionId || '').trim().toUpperCase();
       const { data, error } = await state.supabase.rpc('unlock_session', { session_id: sid });
       if (error) {
-        elements.unlockStatus.textContent = `❌ 送信失敗: ${error.message}`;
+        elements.unlockStatus.textContent = `❌ ${t('send_failed')}: ${error.message}`;
         elements.unlockBtn.disabled = false;
         return;
       }
       if (data && data.success) {
-        elements.unlockStatus.textContent = '✅ アンロック成功！';
+        elements.unlockStatus.textContent = `✅ ${t('unlock_success')}`;
         elements.unlockBtn.innerHTML = '<span>SUCCESS</span>';
       } else {
-        elements.unlockStatus.textContent = `⚠️ セッションなし (${sid})`;
+        elements.unlockStatus.textContent = `⚠️ ${t('session_not_found')} (${sid})`;
         elements.unlockBtn.disabled = false;
       }
     } catch (e) {
-      elements.unlockStatus.textContent = '❌ 送信失敗';
+      elements.unlockStatus.textContent = `❌ ${t('send_failed')}`;
       elements.unlockBtn.disabled = false;
     }
   }
@@ -373,7 +427,7 @@
   // スクワット検出 (MediaPipe)
   // ============================================
   async function initMediaPipe() {
-    updateStatus('AI読み込み中...');
+    updateStatus(t('ai_loading'));
     const pose = new Pose({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}` });
     pose.setOptions({ modelComplexity: 0, smoothLandmarks: true, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
     pose.onResults(onPoseResults);
@@ -880,7 +934,7 @@
     const exitBtn = document.getElementById('exit-btn');
     if (exitBtn) {
       exitBtn.onclick = () => {
-        if(!confirm('トレーニングを中断しますか？')) return;
+        if(!confirm(t('confirm_cancel_training'))) return;
         cancelSession();
       };
     }
