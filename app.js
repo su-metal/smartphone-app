@@ -18,6 +18,10 @@
       membership_check_failed: 'Membership check failed',
       go_to_session: 'Go to PC Session',
       subscription_required: 'Paid plan required',
+      manage_subscription: 'Manage Subscription',
+      open_customer_portal_failed: 'Failed to open customer portal.',
+      checkout_success_message: 'Payment completed. Membership will be reflected shortly.',
+      checkout_cancel_message: 'Checkout was canceled.',
       google_login_failed: 'Google login failed: ',
       google_login_network_error: 'Google login failed due to network error.',
       checkout_url_failed: 'Failed to get checkout URL.',
@@ -39,6 +43,10 @@
       membership_check_failed: '会員確認に失敗しました',
       go_to_session: 'PC連携へ進む',
       subscription_required: 'サブスク登録が必要です',
+      manage_subscription: 'サブスク管理',
+      open_customer_portal_failed: 'サブスク管理ページを開けませんでした。',
+      checkout_success_message: '決済が完了しました。会員状態の反映まで少し待ってください。',
+      checkout_cancel_message: '決済はキャンセルされました。',
       google_login_failed: 'Googleログイン失敗: ',
       google_login_network_error: 'Googleログインに失敗しました。ネットワークを確認してください。',
       checkout_url_failed: '決済URLの取得に失敗しました。',
@@ -102,6 +110,7 @@
     subscriptionStatusBadge: document.getElementById('subscription-status-badge'),
     installBtn: document.getElementById('install-btn'),
     subscribeBtn: document.getElementById('subscribe-btn'),
+    manageSubscriptionBtn: document.getElementById('manage-subscription-btn'),
     toSessionBtn: document.getElementById('to-session-btn'),
     logoutBtn: document.getElementById('logout-btn'),
 
@@ -146,6 +155,10 @@
 
 
   function updateStatus(text) { elements.statusLabel.textContent = text; }
+  function setManageSubscriptionVisible(visible) {
+    if (!elements.manageSubscriptionBtn) return;
+    elements.manageSubscriptionBtn.classList.toggle('hidden', !visible);
+  }
 
   function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -178,6 +191,7 @@
     elements.toSessionBtn.disabled = true;
     elements.toSessionBtn.textContent = t('membership_checking');
     elements.subscribeBtn.classList.add('hidden');
+    setManageSubscriptionVisible(false);
     elements.subscriptionStatusBadge.textContent = 'MEMBERSHIP: CHECKING';
     elements.subscriptionStatusBadge.className = 'status-inactive';
 
@@ -205,6 +219,7 @@
         elements.toSessionBtn.disabled = true;
         elements.toSessionBtn.textContent = t('membership_check_failed');
         elements.subscribeBtn.classList.remove('hidden');
+        setManageSubscriptionVisible(false);
         return;
       }
 
@@ -218,6 +233,10 @@
 
       if (isActive) {
         elements.subscribeBtn.classList.add('hidden');
+        setManageSubscriptionVisible(true);
+        if (elements.manageSubscriptionBtn) {
+          elements.manageSubscriptionBtn.textContent = t('manage_subscription');
+        }
         elements.toSessionBtn.disabled = false;
         elements.toSessionBtn.textContent = t('go_to_session');
         if (elements.authScreen.classList.contains('active')) {
@@ -225,6 +244,7 @@
         }
       } else {
         elements.subscribeBtn.classList.remove('hidden');
+        setManageSubscriptionVisible(false);
         elements.toSessionBtn.disabled = true;
         elements.toSessionBtn.textContent = t('subscription_required');
       }
@@ -236,6 +256,7 @@
       elements.toSessionBtn.disabled = true;
       elements.toSessionBtn.textContent = t('membership_check_failed');
       elements.subscribeBtn.classList.remove('hidden');
+      setManageSubscriptionVisible(false);
     } finally {
       state._membershipCheckInFlight = false;
     }
@@ -289,6 +310,38 @@
       if (payload?.url) window.location.href = payload.url;
       else alert(t('checkout_url_failed'));
     } catch (e) { alert(t('checkout_prepare_failed')); }
+  }
+
+  async function handleManageSubscription() {
+    try {
+      const { data: sessionData } = await state.supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) {
+        alert('Please log in again before opening subscription settings.');
+        return;
+      }
+
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/create-customer-portal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': SUPABASE_ANON_KEY
+        }
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = payload?.error || `HTTP ${res.status}`;
+        alert(`${t('open_customer_portal_failed')} ${detail}`);
+        return;
+      }
+
+      if (payload?.url) window.location.href = payload.url;
+      else alert(t('open_customer_portal_failed'));
+    } catch (e) {
+      alert(t('open_customer_portal_failed'));
+    }
   }
 
   // ============================================
@@ -875,6 +928,9 @@
     elements.googleLoginBtn.onclick = handleGoogleLogin;
     elements.logoutBtn.onclick = handleLogout;
     elements.subscribeBtn.onclick = handleSubscribe;
+    if (elements.manageSubscriptionBtn) {
+      elements.manageSubscriptionBtn.onclick = handleManageSubscription;
+    }
     elements.toSessionBtn.onclick = () => showScreen('session-screen');
     elements.startBtn.onclick = () => startSession();
     elements.scanQrBtn.onclick = () => startQRScan();
@@ -895,6 +951,18 @@
     const urlParams = new URLSearchParams(window.location.search);
     const sid = urlParams.get('session');
     const target = urlParams.get('target');
+    const checkout = urlParams.get('checkout');
+    const portal = urlParams.get('portal');
+
+    if (checkout === 'success') {
+      alert(t('checkout_success_message'));
+      state.user && updateUserInfo(state.user);
+    } else if (checkout === 'cancel') {
+      alert(t('checkout_cancel_message'));
+    }
+    if (portal === 'return' && state.user) {
+      updateUserInfo(state.user);
+    }
     
     if (target) {
       const parsed = parseInt(target);
@@ -907,6 +975,12 @@
     if (sid) {
       elements.sessionInput.value = sid;
       window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (checkout || portal) {
+      const params = new URLSearchParams(window.location.search);
+      params.delete('checkout');
+      params.delete('portal');
+      const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, document.title, next);
     }
 
     document.addEventListener('click', () => {
