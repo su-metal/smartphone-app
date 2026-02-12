@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>THE TOLL - スクワットチャレンジ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;700&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=2.18">
+  <!-- MediaPipe Pose -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="THE TOLL">
+  <link rel="apple-touch-icon" href="icons/icon-512.png">
+  <!-- QR Scanner -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('[THE TOLL] SW registered:', reg))
+          .catch(err => console.error('[THE TOLL] SW registration failed:', err));
+      });
+    }
+  </script>
+  <div id="app">
+    <!-- 認証画面 ... -->
+    
+    <!-- 17: (skipped unchanged lines) -->
+    <!-- 認証画面 -->
+    <div id="auth-screen" class="screen active">
+      <div class="container">
+        <h1>THE TOLL</h1>
+        <p class="subtitle">LET'S DO OUR BEST!</p>
+        
+        <div id="auth-form">
+          <div class="input-group">
+            <label for="email-input">EMAIL</label>
+            <input type="email" id="email-input" placeholder="user@example.com">
+          </div>
+          <div class="input-group">
+            <label for="password-input">PASSWORD</label>
+            <input type="password" id="password-input" placeholder="••••••••">
+          </div>
+          <div class="auth-buttons">
+            <button id="login-btn" class="btn primary">LOGIN</button>
+            <button id="signup-btn" class="btn secondary">REGISTER</button>
+          </div>
+        </div>
+        
+        <div id="user-info" class="hidden">
+          <p id="user-display-email" class="session-id-display"></p>
+          <div id="subscription-status-badge"></div>
+          
+          <button id="install-btn" class="btn secondary hidden">INSTALL APP</button>
+          <button id="subscribe-btn" class="btn primary">SUBSCRIBE ($49/YEAR)</button>
+          
+          <button id="to-session-btn" class="btn secondary">ENTER SESSION</button>
+          <button id="logout-btn" class="text-btn">LOGOUT</button>
+        </div>
+        
+        <a href="#" onclick="forceReset(); return false;" class="text-btn" style="display:block; margin-top: 30px; opacity: 0.5;">System Hard Reset (v2.18)</a>
+      </div>
+    </div>
+
+    <!-- セッションID入力画面 -->
+    <div id="session-screen" class="screen">
+      <div class="container">
+        <h1>THE TOLL</h1>
+        <p class="subtitle">WANT TO BROWSE?</p>
+        
+        <div class="input-group">
+          <label for="session-input">SESSION ID</label>
+          <input type="text" id="session-input" placeholder="XXXX-XXXX" maxlength="9" autocomplete="off">
+        </div>
+        
+        <div class="session-buttons">
+          <button id="start-btn" class="btn primary">
+            START CHALLENGE
+          </button>
+          <p id="next-exercise-display" class="subtitle" style="margin-top: -10px; font-size: 0.6rem; color: var(--volt);">NEXT: (LOADING...)</p>
+          <div style="font-size: 0.5rem; opacity: 0.5; margin-bottom: 20px;">
+            <a href="#" id="reset-cycle-btn" style="color: var(--volt); text-decoration: none;">[CHANGE EXERCISE]</a>
+            <span id="cycle-debug-info" style="margin-left: 10px;">ID: -</span>
+          </div>
+          
+          <button id="scan-qr-btn" class="btn secondary">
+            SCAN QR CODE
+          </button>
+        </div>
+        
+        <p class="subtitle" style="margin-top: 20px;">PCに表示されたIDを入れてね</p>
+        
+        <a href="#" id="session-logout-btn" class="text-btn">Logout from this account</a>
+        <a href="#" onclick="forceReset(); return false;" class="text-btn" style="display:block; margin-top:10px; opacity: 0.5;">System Hard Reset (v2.16)</a>
+      </div>
+
+      <!-- QRスキャナーオーバーレイ -->
+      <div id="qr-reader-container" class="hidden">
+        <div id="qr-reader"></div>
+        <button id="close-scan-btn" class="btn secondary" style="width: auto; margin-top: 20px;">CANCEL</button>
+      </div>
+    </div>
+
+    <!-- スクワット画面 -->
+    <div id="squat-screen" class="screen">
+      <div class="camera-container">
+        <video id="camera" autoplay muted playsinline></video>
+        <canvas id="pose-canvas"></canvas>
+        
+        <div class="overlay-ui">
+          <div class="hud-top">
+            <div class="session-id-display">SESSION: <span id="current-session">-</span></div>
+            <div class="hud-top-right">
+              <button id="fullscreen-btn" class="hud-mini-btn">FULLSCREEN</button>
+              <div class="hud-status" id="status">READY</div>
+            </div>
+          </div>
+
+          <div class="hud-center">
+             <div class="exercise-name" id="exercise-label">SQUAT</div>
+             <div class="squat-counter"><span id="squat-count">0</span><span class="squat-total">/<span id="target-count-display">20</span></span></div>
+          </div>
+          
+          
+          <div class="hud-bottom">
+            <div class="hud-bottom-flex">
+              <div class="squat-guide" id="squat-hint">LOWER YOUR BODY</div>
+              <div style="display: flex; gap: 10px;">
+                <button id="recalibrate-btn" class="hud-btn">RESET CAPTURE</button>
+                <button id="exit-btn" class="hud-btn">EXIT</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="guide-overlay" id="guide">
+          <div class="squat-guide">
+            STAND BACK<br>SHOW US YOUR BODY!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 完了画面 -->
+    <div id="complete-screen" class="screen">
+      <div class="container complete-container">
+        <div class="complete-ring">
+          <div class="check-mark">✓</div>
+        </div>
+        
+        <h1 class="complete-title">DONE!</h1>
+        <p class="complete-subtitle">YOU'RE FREE TO GO (FOR NOW)</p>
+        
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="val" id="complete-reps-display">20</div>
+            <div class="lbl">REPS</div>
+          </div>
+          <div class="divider"></div>
+          <div class="stat-box">
+            <div class="val" id="session-time">--</div>
+            <div class="lbl">SEC</div>
+          </div>
+        </div>
+        
+        <button id="unlock-btn" class="btn primary">
+          UNLOCK PC
+        </button>
+        
+        <p class="subtitle" id="unlock-status" style="margin-top: 20px;"></p>
+        
+        <a href="#" id="back-to-session-btn" class="text-btn" style="display:block; margin-bottom: 20px;">START ANOTHER SESSION</a>
+        
+        <a href="#" onclick="forceReset(); return false;" class="text-btn" style="opacity: 0.5;">System Hard Reset (v2.16)</a>
+      </div>
+    </div>
+        
+    
+    <!-- デバッグコンソール -->
+    <div id="debug-console"></div>
+  </div>
+
+  <script src="app.js?v=2.18"></script>
+  <script>
+    // 強制リセット関数
+    async function forceReset() {
+      if(!confirm('アプリを初期化して再読み込みしますか？')) return;
+      
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (let registration of registrations) {
+          await registration.unregister();
+        }
+      }
+      
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(key => caches.delete(key)));
+      }
+      
+      localStorage.clear();
+      window.location.reload(true);
+    }
+  </script>
+</body>
+</html>
