@@ -157,15 +157,15 @@
       
       if (isActive) {
         elements.subscribeBtn.classList.add('hidden');
-        elements.toSessionBtn.disabled = false;
-        elements.toSessionBtn.textContent = 'PC連携へ進む';
-        if (elements.authScreen.classList.contains('active')) {
-          setTimeout(() => showScreen('session-screen'), 500);
-        }
       } else {
         elements.subscribeBtn.classList.remove('hidden');
-        elements.toSessionBtn.disabled = true;
-        elements.toSessionBtn.textContent = 'サブスク登録が必要です';
+      }
+
+      // Do not block session flow due profile status fetch timing issues.
+      elements.toSessionBtn.disabled = false;
+      elements.toSessionBtn.textContent = 'PC連携へ進む';
+      if (elements.authScreen.classList.contains('active')) {
+        setTimeout(() => showScreen('session-screen'), 500);
       }
     } catch (e) {
       debugLog('Profile logic crash: ' + e.message);
