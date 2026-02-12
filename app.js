@@ -128,13 +128,24 @@
     elements.userInfo.classList.remove('hidden');
     
     try {
-      const { data: profile, error } = await state.supabase
-        .from('profiles')
-        .select('subscription_status')
-        .eq('id', user.id)
-        .single();
-        
-      if (error) debugLog('Profile fetch error: ' + error.message);
+      // Ensure session is fully available before profile query.
+      await state.supabase.auth.getSession();
+
+      let profile = null;
+      let lastError = null;
+      for (let i = 0; i < 3; i++) {
+        const { data, error } = await state.supabase
+          .from('profiles')
+          .select('subscription_status')
+          .eq('id', user.id)
+          .maybeSingle();
+        profile = data || null;
+        lastError = error || null;
+        if (profile) break;
+        await new Promise(r => setTimeout(r, 300));
+      }
+
+      if (lastError) debugLog('Profile fetch error: ' + lastError.message);
 
       const rawStatus = (profile?.subscription_status || 'inactive').toString();
       const normalizedStatus = rawStatus.trim().toLowerCase();
