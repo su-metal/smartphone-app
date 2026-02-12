@@ -18,12 +18,8 @@
       membership_check_failed: 'Membership check failed',
       go_to_session: 'Go to PC Session',
       subscription_required: 'Paid plan required',
-      email_password_required: 'Please enter email and password.',
-      login_failed: 'Login failed: ',
-      login_network_error: 'Login failed: network error. Check Supabase connectivity/CORS.',
-      signup_failed: 'Signup failed: ',
-      signup_success_auto: 'Account created. Logging in automatically.',
-      signup_confirm_sent: 'Confirmation email sent.',
+      google_login_failed: 'Google login failed: ',
+      google_login_network_error: 'Google login failed due to network error.',
       checkout_url_failed: 'Failed to get checkout URL.',
       checkout_prepare_failed: 'Failed to prepare checkout.',
       enter_session_id: 'Please enter a session ID.',
@@ -43,12 +39,8 @@
       membership_check_failed: '会員確認に失敗しました',
       go_to_session: 'PC連携へ進む',
       subscription_required: 'サブスク登録が必要です',
-      email_password_required: 'メールとパスワードを入力してください',
-      login_failed: 'ログイン失敗: ',
-      login_network_error: 'ログイン失敗: ネットワークエラーです。Supabase接続またはCORS設定を確認してください。',
-      signup_failed: '登録失敗: ',
-      signup_success_auto: 'アカウントを作成しました。自動ログインします。',
-      signup_confirm_sent: '確認メールを送信しました。',
+      google_login_failed: 'Googleログイン失敗: ',
+      google_login_network_error: 'Googleログインに失敗しました。ネットワークを確認してください。',
       checkout_url_failed: '決済URLの取得に失敗しました。',
       checkout_prepare_failed: '決済の準備に失敗しました。',
       enter_session_id: 'セッションIDを入力してください',
@@ -105,10 +97,7 @@
     authScreen: document.getElementById('auth-screen'),
     authForm: document.getElementById('auth-form'),
     userInfo: document.getElementById('user-info'),
-    emailInput: document.getElementById('email-input'),
-    passwordInput: document.getElementById('password-input'),
-    loginBtn: document.getElementById('login-btn'),
-    signupBtn: document.getElementById('signup-btn'),
+    googleLoginBtn: document.getElementById('google-login-btn'),
     userDisplayEmail: document.getElementById('user-display-email'),
     subscriptionStatusBadge: document.getElementById('subscription-status-badge'),
     installBtn: document.getElementById('install-btn'),
@@ -252,29 +241,18 @@
     }
   }
 
-  async function handleLogin() {
-    const email = elements.emailInput.value;
-    const password = elements.passwordInput.value;
-    if (!email || !password) return alert(t('email_password_required'));
+  async function handleGoogleLogin() {
     try {
-      const { error } = await state.supabase.auth.signInWithPassword({ email, password });
-      if (error) alert(t('login_failed') + error.message);
+      const redirectTo = `${window.location.origin}${window.location.pathname}${window.location.search}`;
+      const { error } = await state.supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo }
+      });
+      if (error) alert(t('google_login_failed') + error.message);
     } catch (e) {
-      alert(t('login_network_error'));
-      debugLog('Login network error: ' + (e?.message || e));
+      alert(t('google_login_network_error'));
+      debugLog('Google login network error: ' + (e?.message || e));
     }
-  }
-
-  async function handleSignup() {
-    const email = elements.emailInput.value;
-    const password = elements.passwordInput.value;
-    if (!email || !password) return alert(t('email_password_required'));
-    const { error, data } = await state.supabase.auth.signUp({ 
-      email, password, options: { emailRedirectTo: window.location.origin }
-    });
-    if (error) alert(t('signup_failed') + error.message);
-    else if (data.session) alert(t('signup_success_auto'));
-    else alert(t('signup_confirm_sent'));
   }
 
   async function handleLogout() { await state.supabase.auth.signOut(); }
@@ -894,8 +872,7 @@
     try { state.html5QrCode = new Html5Qrcode("qr-reader"); } catch(e) {}
 
     // イベントリスナー
-    elements.loginBtn.onclick = handleLogin;
-    elements.signupBtn.onclick = handleSignup;
+    elements.googleLoginBtn.onclick = handleGoogleLogin;
     elements.logoutBtn.onclick = handleLogout;
     elements.subscribeBtn.onclick = handleSubscribe;
     elements.toSessionBtn.onclick = () => showScreen('session-screen');

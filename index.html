@@ -45,19 +45,10 @@
         <p class="subtitle">LET'S DO OUR BEST!</p>
         
         <div id="auth-form">
-          <div class="input-group">
-            <label for="email-input">EMAIL</label>
-            <input type="email" id="email-input" placeholder="user@example.com">
-          </div>
-          <div class="input-group">
-            <label for="password-input">PASSWORD</label>
-            <input type="password" id="password-input" placeholder="••••••••">
-          </div>
-          <p id="auth-guide-1" style="font-size:0.72rem; margin: 2px 0; opacity:0.85;">Create account is free.</p>
+          <p id="auth-guide-1" style="font-size:0.72rem; margin: 2px 0; opacity:0.85;">Use Google to create or sign in.</p>
           <p id="auth-guide-2" style="font-size:0.72rem; margin: 2px 0 14px; opacity:0.85;">Paid plan is required to start sessions.</p>
           <div class="auth-buttons">
-            <button id="login-btn" class="btn primary">LOGIN</button>
-            <button id="signup-btn" class="btn secondary">CREATE ACCOUNT</button>
+            <button id="google-login-btn" class="btn primary">CONTINUE WITH GOOGLE</button>
           </div>
         </div>
         
@@ -194,7 +185,7 @@
     <div id="debug-console"></div>
   </div>
 
-  <script src="app.js?v=2.27"></script>
+  <script src="app.js?v=2.28"></script>
   <script>
     const appLang = new URLSearchParams(window.location.search).get('lang') === 'ja' ? 'ja' : 'en';
     if (appLang === 'ja') {
@@ -204,10 +195,10 @@
       if (sessionHelp) sessionHelp.textContent = 'PCに表示されたIDを入れてね';
       const authGuide1 = document.getElementById('auth-guide-1');
       const authGuide2 = document.getElementById('auth-guide-2');
-      const signupBtn = document.getElementById('signup-btn');
-      if (authGuide1) authGuide1.textContent = 'アカウント作成は無料です。';
+      const googleLoginBtn = document.getElementById('google-login-btn');
+      if (authGuide1) authGuide1.textContent = 'Googleアカウントで登録・ログインします。';
       if (authGuide2) authGuide2.textContent = 'セッション開始には有料プランが必要です。';
-      if (signupBtn) signupBtn.textContent = 'アカウント作成';
+      if (googleLoginBtn) googleLoginBtn.textContent = 'Googleで続行';
     }
 
     // 強制リセット関数
