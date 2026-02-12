@@ -136,13 +136,15 @@
         
       if (error) debugLog('Profile fetch error: ' + error.message);
 
-      const status = profile?.subscription_status || 'inactive';
-      state.subscriptionStatus = status;
+      const rawStatus = (profile?.subscription_status || 'inactive').toString();
+      const normalizedStatus = rawStatus.trim().toLowerCase();
+      const isActive = normalizedStatus === 'active';
+      state.subscriptionStatus = normalizedStatus;
+
+      elements.subscriptionStatusBadge.textContent = `MEMBERSHIP: ${isActive ? 'ACTIVE' : 'INACTIVE'}`;
+      elements.subscriptionStatusBadge.className = isActive ? 'status-active' : 'status-inactive';
       
-      elements.subscriptionStatusBadge.textContent = `会員ステータス: ${status === 'active' ? '✅ 有料会員' : '❌ 未登録'}`;
-      elements.subscriptionStatusBadge.className = status === 'active' ? 'status-active' : 'status-inactive';
-      
-      if (status === 'active') {
+      if (isActive) {
         elements.subscribeBtn.classList.add('hidden');
         elements.toSessionBtn.disabled = false;
         elements.toSessionBtn.textContent = 'PC連携へ進む';
