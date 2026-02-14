@@ -95,7 +95,7 @@
     try {
       const locale = (navigator.language || 'en').toLowerCase();
       const currency = locale.startsWith('ja') ? 'jpy' : 'usd';
-      const accessToken = await getAccessToken();
+      const accessToken = source === 'extension' ? null : await getAccessToken();
 
       const endpoint = accessToken ? 'create-checkout' : 'create-checkout-device';
       const headers = accessToken
