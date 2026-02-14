@@ -143,6 +143,10 @@
   }
 
   function backToApp() {
+    if (source === 'extension') {
+      window.close();
+      return;
+    }
     const qs = new URLSearchParams();
     qs.set('lang', APP_LANG);
     if (deviceId) qs.set('device', deviceId);
