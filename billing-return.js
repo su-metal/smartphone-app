@@ -4,6 +4,7 @@
   const params = new URLSearchParams(window.location.search);
   const lang = params.get('lang') === 'ja' ? 'ja' : 'en';
   const checkout = (params.get('checkout') || '').toLowerCase();
+  const portal = (params.get('portal') || '').toLowerCase();
 
   const I18N = {
     en: {
@@ -12,6 +13,7 @@
       success: 'Payment completed successfully.',
       cancel: 'Payment was canceled.',
       unknown: 'Billing result could not be determined.',
+      portalReturn: 'Subscription portal has been closed.',
       closing: 'This tab will close automatically. If it stays open, close it and return to the extension popup.',
       close: 'CLOSE',
     },
@@ -21,6 +23,7 @@
       success: '決済が完了しました。',
       cancel: '決済はキャンセルされました。',
       unknown: '決済結果を判定できませんでした。',
+      portalReturn: 'サブスクリプション管理画面を閉じました。',
       closing: 'このタブは自動で閉じます。閉じない場合は手動で閉じて拡張ポップアップに戻ってください。',
       close: '閉じる',
     }
@@ -34,6 +37,7 @@
   const closeBtn = document.getElementById('close-btn');
 
   function getMessage() {
+    if (portal === 'return') return t('portalReturn');
     if (checkout === 'success') return t('success');
     if (checkout === 'cancel') return t('cancel');
     return t('unknown');
