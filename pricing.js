@@ -7,6 +7,7 @@
   const params = new URLSearchParams(window.location.search);
   const APP_LANG = params.get('lang') === 'ja' ? 'ja' : 'en';
   const deviceId = (params.get('device') || '').trim();
+  const source = (params.get('source') || 'app').trim();
 
   const I18N = {
     en: {
@@ -110,8 +111,8 @@
           };
 
       const body = accessToken
-        ? { currency, plan }
-        : { device_id: deviceId, currency, plan };
+        ? { currency, plan, lang: APP_LANG, source, device_id: deviceId || null }
+        : { device_id: deviceId, currency, plan, lang: APP_LANG, source };
 
       if (!accessToken && !deviceId) {
         setStatus(t('needLogin'));
