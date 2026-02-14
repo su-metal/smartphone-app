@@ -8,6 +8,12 @@
   const APP_LANG = params.get('lang') === 'ja' ? 'ja' : 'en';
   const deviceId = (params.get('device') || '').trim();
   const source = (params.get('source') || 'app').trim();
+  const extensionToken = (params.get('ext_token') || '').trim();
+  if (extensionToken) {
+    params.delete('ext_token');
+    const clean = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    window.history.replaceState({}, '', clean);
+  }
 
   const I18N = {
     en: {
@@ -95,7 +101,7 @@
     try {
       const locale = (navigator.language || 'en').toLowerCase();
       const currency = locale.startsWith('ja') ? 'jpy' : 'usd';
-      const accessToken = source === 'extension' ? null : await getAccessToken();
+      const accessToken = extensionToken || await getAccessToken();
 
       const endpoint = accessToken ? 'create-checkout' : 'create-checkout-device';
       const headers = accessToken
