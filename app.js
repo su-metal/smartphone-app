@@ -220,6 +220,9 @@
 
   function updateExerciseControls() {
     const sessionReady = !!((elements.sessionInput?.value || '').trim().length >= 4);
+    if (elements.startBtn) {
+      elements.startBtn.disabled = !sessionReady;
+    }
     if (elements.nextExerciseDisplay) {
       elements.nextExerciseDisplay.classList.toggle('hidden', !!state.isPro || !sessionReady);
     }
@@ -1051,6 +1054,7 @@
     elements.unlockBtn.disabled = false;
     elements.unlockBtn.innerHTML = '<span>UNLOCK PC</span>';
     updateStatus('READY');
+    updateExerciseControls();
 
     // カメラを完全に停止
     if (state.poseCamera) {
@@ -1213,6 +1217,7 @@
 
     showScreen('session-screen');
     loadNextExercise();
+    updateExerciseControls();
     window.addEventListener('focus', refreshPlanByDevice);
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') refreshPlanByDevice();
