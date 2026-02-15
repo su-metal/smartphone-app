@@ -739,12 +739,9 @@ h1 {
     border-left: 1px solid var(--volt);
   }
   
-  /* Make room for the console */
+  /* Keep screens centered even in landscape */
   .screen.active {
-    padding-right: 250px; /* Push content away from console */
-    padding-left: 20px;
-    padding-top: 20px;
-    padding-bottom: 20px;
+    padding: 20px;
   }
   
   /* COMPLETE SCREEN LAYOUT */
