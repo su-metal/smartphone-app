@@ -21,6 +21,7 @@
       title: 'THE TOLL - Pricing',
       subtitle: 'CHOOSE YOUR PLAN',
       note: 'Select a plan, then continue to secure Stripe checkout.',
+      trialNote: 'New accounts get a 14-day free trial. Billing starts after trial.',
       monthly: 'MONTHLY PLAN',
       yearly: 'YEARLY PLAN',
       monthlySub: 'Final amount shown at checkout',
@@ -35,6 +36,7 @@
       title: 'THE TOLL - 料金プラン',
       subtitle: 'プランを選択',
       note: 'プラン選択後、Stripeの安全な決済画面へ進みます。',
+      trialNote: '新規アカウントは14日間の無料体験。課金は体験終了後に開始されます。',
       monthly: '月額プラン',
       yearly: '年額プラン',
       monthlySub: '最終金額は決済画面で確認できます',
@@ -52,6 +54,7 @@
   const el = {
     subtitle: document.getElementById('subtitle'),
     note: document.getElementById('note'),
+    trialNote: document.getElementById('trial-note'),
     monthlyBtn: document.getElementById('monthly-btn'),
     yearlyBtn: document.getElementById('yearly-btn'),
     monthlyLabel: document.getElementById('monthly-label'),
@@ -69,6 +72,7 @@
     document.title = t('title');
     el.subtitle.textContent = t('subtitle');
     el.note.textContent = t('note');
+    el.trialNote.textContent = t('trialNote');
     el.monthlyLabel.textContent = t('monthly');
     el.yearlyLabel.textContent = t('yearly');
     el.monthlySub.textContent = t('monthlySub');
