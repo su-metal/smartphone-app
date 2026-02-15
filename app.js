@@ -102,6 +102,7 @@
     exerciseType: 'SQUAT', // SQUAT, PUSHUP, SITUP
     cycleIndex: 0,
     selectedExerciseIndex: 0,
+    sessionTargetById: {},
     isSquatting: false,
     startTime: null,
     audioContext: null,
@@ -396,9 +397,9 @@
         return;
       }
 
-      // Initialize one-time 7-day trial for new free users.
+      // Initialize one-time 14-day trial for new free users.
       if (!profile.trial_ends_at && !profile.trial_used && profile.subscription_status !== 'active') {
-        const trialEnds = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const trialEnds = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
         const { error: trialInitError } = await state.supabase
           .from('profiles')
           .update({ trial_ends_at: trialEnds, trial_used: true, plan_tier: 'free' })
@@ -560,15 +561,18 @@
     loadNextExercise();
     debugLog(`Session Start: ${state.exerciseType}, Index: ${state.cycleIndex}`);
 
-    const effectiveTargetRaw = targetFromUrl || state.pendingTargetCount;
+    const cachedTarget = state.sessionTargetById[sessionId];
+    const effectiveTargetRaw = targetFromUrl || state.pendingTargetCount || cachedTarget;
     const effectiveTarget = parseInt(effectiveTargetRaw, 10);
 
     // Settings Guard用の特別ID判定
-    if (sessionId.startsWith('SET-')) {
-      state.targetCount = 30;
-      debugLog('SETTINGS LOCK MISSION: 30 REPS');
+    if (sessionId.startsWith('SET-') || sessionId.startsWith('CFG-')) {
+      state.targetCount = 15;
+      state.sessionTargetById[sessionId] = 15;
+      debugLog('SETTINGS LOCK MISSION: 15 REPS');
     } else if (!isNaN(effectiveTarget) && effectiveTarget > 0) {
       state.targetCount = effectiveTarget;
+      state.sessionTargetById[sessionId] = effectiveTarget;
       debugLog('Target from QR/URL: ' + state.targetCount);
     } else if (!state.isPro) {
       state.exerciseType = 'SQUAT';
@@ -609,9 +613,16 @@
           if (decodedText.startsWith('http')) {
             try {
               const url = new URL(decodedText);
-              sid = url.searchParams.get('session') || sid;
+              const sidFromUrl = url.searchParams.get('session');
+              sid = sidFromUrl || sid;
               target = url.searchParams.get('target');
               device = normalizeDeviceId(url.searchParams.get('device'));
+              if (!sidFromUrl && decodedText.includes('session=')) {
+                const fallback = new URLSearchParams(decodedText.split('?')[1] || '');
+                sid = fallback.get('session') || sid;
+                target = target || fallback.get('target');
+                device = device || normalizeDeviceId(fallback.get('device'));
+              }
             } catch (e) {
               debugLog('URL parse error: ' + e.message);
             }
@@ -1166,6 +1177,7 @@
     if (target) {
       const parsed = parseInt(target);
       if (!isNaN(parsed) && parsed > 0) {
+        state.pendingTargetCount = parsed;
         state.targetCount = parsed;
         debugLog('Target count from URL: ' + state.targetCount);
       }
