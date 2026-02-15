@@ -306,14 +306,16 @@
       const rows = res.ok ? await res.json() : [];
       const row = rows && rows[0] ? rows[0] : null;
       const sub = String(row?.subscription_status || 'inactive').toLowerCase();
+      const tier = String(row?.plan_tier || 'free').toLowerCase();
       const trialEnds = row?.trial_ends_at ? new Date(row.trial_ends_at).getTime() : 0;
       const trialActive = Number.isFinite(trialEnds) && trialEnds > Date.now();
 
       state.subscriptionStatus = sub;
-      state.planTier = String(row?.plan_tier || 'free').toLowerCase();
+      state.planTier = tier;
       state.trialEndsAt = row?.trial_ends_at || null;
       state.trialDaysLeft = trialActive ? Math.max(1, Math.ceil((trialEnds - Date.now()) / (24 * 60 * 60 * 1000))) : 0;
-      state.isPro = sub === 'active' || trialActive;
+      // Device-based flow: treat either active status OR pro tier OR active trial as Pro.
+      state.isPro = sub === 'active' || tier === 'pro' || trialActive;
     } catch (e) {
       debugLog('Device plan fetch failed: ' + (e?.message || e));
       state.subscriptionStatus = 'inactive';
