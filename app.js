@@ -282,6 +282,51 @@
     }
   }
 
+  async function refreshPlanByDevice() {
+    if (!state.linkedDeviceId) {
+      state.subscriptionStatus = 'inactive';
+      state.planTier = 'free';
+      state.trialEndsAt = null;
+      state.trialDaysLeft = 0;
+      state.isPro = false;
+      updateExerciseControls();
+      loadNextExercise();
+      return;
+    }
+
+    try {
+      const url = `${SUPABASE_URL}/rest/v1/device_links?device_id=eq.${encodeURIComponent(state.linkedDeviceId)}&select=subscription_status,plan_tier,trial_ends_at`;
+      const res = await fetch(url, {
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        cache: 'no-store',
+      });
+      const rows = res.ok ? await res.json() : [];
+      const row = rows && rows[0] ? rows[0] : null;
+      const sub = String(row?.subscription_status || 'inactive').toLowerCase();
+      const trialEnds = row?.trial_ends_at ? new Date(row.trial_ends_at).getTime() : 0;
+      const trialActive = Number.isFinite(trialEnds) && trialEnds > Date.now();
+
+      state.subscriptionStatus = sub;
+      state.planTier = String(row?.plan_tier || 'free').toLowerCase();
+      state.trialEndsAt = row?.trial_ends_at || null;
+      state.trialDaysLeft = trialActive ? Math.max(1, Math.ceil((trialEnds - Date.now()) / (24 * 60 * 60 * 1000))) : 0;
+      state.isPro = sub === 'active' || trialActive;
+    } catch (e) {
+      debugLog('Device plan fetch failed: ' + (e?.message || e));
+      state.subscriptionStatus = 'inactive';
+      state.planTier = 'free';
+      state.trialEndsAt = null;
+      state.trialDaysLeft = 0;
+      state.isPro = false;
+    }
+
+    updateExerciseControls();
+    loadNextExercise();
+  }
+
   function toggleFullscreen() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
@@ -590,13 +635,6 @@
     elements.unlockBtn.disabled = true;
     elements.unlockStatus.textContent = t('sending');
     try {
-      const { data: sessionData } = await state.supabase.auth.getSession();
-      if (!sessionData?.session) {
-        elements.unlockStatus.textContent = `❌ ${t('session_expired')}`;
-        elements.unlockBtn.disabled = false;
-        return;
-      }
-
       const sid = (state.sessionId || '').trim().toUpperCase();
       const { data, error } = await state.supabase.rpc('unlock_session', { session_id: sid });
       if (error) {
@@ -1025,27 +1063,18 @@
     debugLog(`[THE TOLL] 初期化 ${APP_VERSION}`);
     
     state.supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    state.supabase.auth.onAuthStateChange((event, session) => {
-      if (session) { state.user = session.user; updateUserInfo(session.user); }
-      else { state.user = null; showScreen('auth-screen'); }
-    });
+    state.user = null;
 
     try { state.html5QrCode = new Html5Qrcode("qr-reader"); } catch(e) {}
 
     // イベントリスナー
-    elements.googleLoginBtn.onclick = handleGoogleLogin;
-    elements.logoutBtn.onclick = handleLogout;
-    if (elements.sessionLogoutBtn) {
-      elements.sessionLogoutBtn.onclick = async (e) => {
-        e.preventDefault();
-        await handleLogout();
-      };
-    }
-    elements.subscribeBtn.onclick = handleSubscribe;
+    if (elements.googleLoginBtn) elements.googleLoginBtn.onclick = handleGoogleLogin;
+    if (elements.logoutBtn) elements.logoutBtn.onclick = handleLogout;
+    if (elements.subscribeBtn) elements.subscribeBtn.onclick = handleSubscribe;
     if (elements.manageSubscriptionBtn) {
       elements.manageSubscriptionBtn.onclick = handleManageSubscription;
     }
-    elements.toSessionBtn.onclick = () => showScreen('session-screen');
+    if (elements.toSessionBtn) elements.toSessionBtn.onclick = () => showScreen('session-screen');
     elements.startBtn.onclick = () => startSession();
     elements.scanQrBtn.onclick = () => startQRScan();
     elements.closeScanBtn.onclick = () => stopQRScan();
@@ -1085,15 +1114,16 @@
     } else if (storedDeviceId) {
       state.linkedDeviceId = storedDeviceId;
     }
+    await refreshPlanByDevice();
 
     if (checkout === 'success') {
       alert(t('checkout_success_message'));
-      state.user && updateUserInfo(state.user);
+      await refreshPlanByDevice();
     } else if (checkout === 'cancel') {
       alert(t('checkout_cancel_message'));
     }
-    if (portal === 'return' && state.user) {
-      updateUserInfo(state.user);
+    if (portal === 'return') {
+      await refreshPlanByDevice();
     }
     
     if (target) {
@@ -1148,8 +1178,12 @@
       elements.fullscreenBtn.onclick = toggleFullscreen;
     }
 
-    // 初期表示の種目セット
+    showScreen('session-screen');
     loadNextExercise();
+    window.addEventListener('focus', refreshPlanByDevice);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') refreshPlanByDevice();
+    });
   }
 
   init();
