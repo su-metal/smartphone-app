@@ -100,6 +100,7 @@
     targetCount: 20, // デフォルト
     exerciseType: 'SQUAT', // SQUAT, PUSHUP, SITUP
     cycleIndex: 0,
+    selectedExerciseIndex: 0,
     isSquatting: false,
     startTime: null,
     audioContext: null,
@@ -120,6 +121,7 @@
     { type: 'PUSHUP', label: 'PUSH-UP', defaultCount: 20 },
     { type: 'SITUP', label: 'SIT-UP', defaultCount: 20 }
   ];
+  const STORAGE_SELECTED_EXERCISE = 'the_toll_selected_exercise';
 
   // ============================================
   // DOM要素
@@ -144,6 +146,8 @@
     startBtn: document.getElementById('start-btn'),
     scanQrBtn: document.getElementById('scan-qr-btn'),
     nextExerciseDisplay: document.getElementById('next-exercise-display'),
+    proExerciseSelector: document.getElementById('pro-exercise-selector'),
+    exerciseSelect: document.getElementById('exercise-select'),
     resetCycleBtn: document.getElementById('reset-cycle-btn'),
     cycleDebugInfo: document.getElementById('cycle-debug-info'), // NEW
     qrReaderContainer: document.getElementById('qr-reader-container'),
@@ -204,6 +208,58 @@
     if (!v) return null;
     if (!/^[a-zA-Z0-9_-]{6,80}$/.test(v)) return null;
     return v;
+  }
+
+  function getStoredExerciseIndex() {
+    const raw = localStorage.getItem(STORAGE_SELECTED_EXERCISE);
+    const idx = parseInt(raw, 10);
+    if (!Number.isInteger(idx)) return 0;
+    return Math.max(0, Math.min(EXERCISES.length - 1, idx));
+  }
+
+  function updateExerciseControls() {
+    if (elements.proExerciseSelector) {
+      elements.proExerciseSelector.classList.toggle('hidden', !state.isPro);
+    }
+    if (elements.exerciseSelect) {
+      elements.exerciseSelect.disabled = !state.isPro;
+      elements.exerciseSelect.value = String(state.selectedExerciseIndex || 0);
+    }
+    if (elements.resetCycleBtn) {
+      elements.resetCycleBtn.classList.add('hidden');
+    }
+    if (elements.cycleDebugInfo) {
+      elements.cycleDebugInfo.classList.add('hidden');
+    }
+  }
+
+  function applyExerciseIndex(idx) {
+    const safeIdx = Math.max(0, Math.min(EXERCISES.length - 1, idx));
+    const selected = EXERCISES[safeIdx];
+    state.cycleIndex = safeIdx;
+    state.selectedExerciseIndex = safeIdx;
+    state.exerciseType = selected.type;
+
+    if (elements.exerciseSelect) elements.exerciseSelect.value = String(safeIdx);
+    if (elements.exerciseLabel) elements.exerciseLabel.textContent = selected.label;
+    if (elements.nextExerciseDisplay) {
+      elements.nextExerciseDisplay.textContent = `EXERCISE: ${selected.label}`;
+    }
+    if (elements.cycleDebugInfo) elements.cycleDebugInfo.textContent = `ID: ${safeIdx}`;
+
+    if (elements.hint) {
+      if (selected.type === 'SQUAT') elements.hint.textContent = 'SQUAT DEEP';
+      else if (selected.type === 'PUSHUP') elements.hint.textContent = 'LOWER YOUR BODY';
+      else if (selected.type === 'SITUP') elements.hint.textContent = 'USE SIDE VIEW';
+    }
+
+    if (elements.overlayUi) {
+      if (selected.type === 'SITUP') elements.overlayUi.classList.add('landscape-mode');
+      else elements.overlayUi.classList.remove('landscape-mode');
+    }
+
+    state.targetCount = state.isPro ? selected.defaultCount : 10;
+    if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = state.targetCount;
   }
   async function syncDeviceLink() {
     if (!state.user || !state.linkedDeviceId) return;
@@ -318,6 +374,8 @@
       state.trialEndsAt = profile.trial_ends_at || null;
       state.trialDaysLeft = trialDaysLeft;
       state.isPro = isPro;
+      updateExerciseControls();
+      loadNextExercise();
       await syncDeviceLink();
 
       if (isActive) {
@@ -822,81 +880,30 @@
   }
  
   function cycleExercise() {
-    if (!state.isPro) {
-      state.cycleIndex = 0;
-      state.exerciseType = 'SQUAT';
-      loadNextExercise();
-      return;
-    }
-    saveCycleProgress();
-    debugLog('Manual Cycle triggered');
+    // Free only: cycle helper keeps simple "next" behavior.
+    if (state.isPro) return;
+    const nextIdx = (state.cycleIndex + 1) % EXERCISES.length;
+    localStorage.setItem(STORAGE_SELECTED_EXERCISE, String(nextIdx));
+    loadNextExercise();
   }
 
   function loadNextExercise() {
     try {
-      const saved = localStorage.getItem('the_toll_cycle_index');
-      let idx = parseInt(saved);
-      if (isNaN(idx)) idx = 0;
-      
+      let idx = getStoredExerciseIndex();
       if (!state.isPro) {
-        idx = 0;
-      } else {
-        idx = idx % EXERCISES.length;
+        idx = 0; // Free is always SQUAT.
       }
-      state.cycleIndex = idx;
-      state.exerciseType = EXERCISES[idx].type;
-      
-      const label = EXERCISES[idx].label;
-      const type = EXERCISES[idx].type;
-      debugLog(`Cycle Sync: ${label} (ID: ${idx})`);
-      
-      // 全画面のUIを一斉に書き換え
-      if (elements.exerciseLabel) elements.exerciseLabel.textContent = label;
-      
-      // ヒントを動的に変更
-      if (elements.hint) {
-        if (type === 'SQUAT') elements.hint.textContent = 'SQUAT DEEP';
-        else if (type === 'PUSHUP') elements.hint.textContent = 'LOWER YOUR BODY';
-        else if (type === 'SITUP') elements.hint.textContent = 'USE SIDE VIEW';
-      }
-
-      // 腹筋のみランドスケープUIを適用
-      if (elements.overlayUi) {
-        if (type === 'SITUP') {
-          elements.overlayUi.classList.add('landscape-mode');
-        } else {
-          elements.overlayUi.classList.remove('landscape-mode');
-        }
-      }
-      if (elements.nextExerciseDisplay) {
-        elements.nextExerciseDisplay.textContent = state.isPro ? `NEXT: ${label}` : 'NEXT: SQUAT (FREE)';
-      }
-      if (elements.cycleDebugInfo) elements.cycleDebugInfo.textContent = `ID: ${idx}`;
-      
-      state.targetCount = state.isPro ? EXERCISES[idx].defaultCount : 10;
- 
-      // ターゲット表示も更新
-      if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = state.targetCount;
-      // if (elements.completeRepsDisplay) elements.completeRepsDisplay.textContent = state.targetCount; //削除: 完了画面の表示は完了時に行う
-      
+      applyExerciseIndex(idx);
+      updateExerciseControls();
     } catch (e) {
       debugLog('Error loading exercise cycle: ' + e.message);
     }
   }
  
   function saveCycleProgress() {
-    try {
-      const currentIdx = state.cycleIndex;
-      const nextIdx = (currentIdx + 1) % EXERCISES.length;
-      
-      localStorage.setItem('the_toll_cycle_index', nextIdx);
-      debugLog(`Cycle Step: ${currentIdx} -> ${nextIdx}`);
-      
-      // 保存した直後に読み込み直してUIに反映
-      loadNextExercise();
-    } catch (e) {
-      debugLog('Error saving exercise cycle: ' + e.message);
-    }
+    // Keep current exercise selection stable across sessions.
+    localStorage.setItem(STORAGE_SELECTED_EXERCISE, String(state.selectedExerciseIndex || 0));
+    loadNextExercise();
   }
  
   function calculateAngle(a, b, c) {
@@ -1046,6 +1053,15 @@
       e.preventDefault();
       cycleExercise();
     };
+    if (elements.exerciseSelect) {
+      elements.exerciseSelect.onchange = (e) => {
+        if (!state.isPro) return;
+        const idx = parseInt(e.target.value, 10);
+        if (!Number.isInteger(idx)) return;
+        localStorage.setItem(STORAGE_SELECTED_EXERCISE, String(idx));
+        loadNextExercise();
+      };
+    }
     elements.unlockBtn.onclick = sendUnlockSignal;
     elements.backToSessionBtn.onclick = (e) => {
       e.preventDefault();

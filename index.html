@@ -84,9 +84,17 @@
           <button id="start-btn" class="btn primary">
             START CHALLENGE
           </button>
-          <p id="next-exercise-display" class="subtitle" style="margin-top: -10px; font-size: 0.6rem; color: var(--volt);">NEXT: (LOADING...)</p>
+          <p id="next-exercise-display" class="subtitle" style="margin-top: -10px; font-size: 0.6rem; color: var(--volt);">EXERCISE: (LOADING...)</p>
+          <div id="pro-exercise-selector" class="exercise-selector hidden">
+            <label for="exercise-select">EXERCISE</label>
+            <select id="exercise-select">
+              <option value="0">SQUAT</option>
+              <option value="1">PUSH-UP</option>
+              <option value="2">SIT-UP</option>
+            </select>
+          </div>
           <div style="font-size: 0.5rem; opacity: 0.5; margin-bottom: 20px;">
-            <a href="#" id="reset-cycle-btn" style="color: var(--volt); text-decoration: none;">[CHANGE EXERCISE]</a>
+            <a href="#" id="reset-cycle-btn" style="color: var(--volt); text-decoration: none;">[NEXT EXERCISE]</a>
             <span id="cycle-debug-info" style="margin-left: 10px;">ID: -</span>
           </div>
           

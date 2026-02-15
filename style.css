@@ -468,6 +468,30 @@ h1 {
 
 .hidden { display: none !important; }
 
+.exercise-selector {
+  margin: -6px 0 12px;
+  text-align: left;
+}
+
+.exercise-selector label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 900;
+  margin-bottom: 6px;
+  color: var(--pop-black);
+}
+
+.exercise-selector select {
+  width: 100%;
+  border: var(--border-thick);
+  background: var(--pop-white);
+  color: var(--pop-black);
+  padding: 10px 12px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
 /* Responsive adjustments */
 @media (max-height: 700px) {
   h1 { font-size: 2.5rem; }
