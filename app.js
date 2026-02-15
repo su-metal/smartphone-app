@@ -591,9 +591,10 @@
       await state.html5QrCode.start(
         { facingMode: "environment" }, 
         { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
+        async (decodedText) => {
           let sid = decodedText;
           let target = null;
+          let device = null;
           
           // URLからsessionとtargetを抽出
           // URLからsessionとtargetを抽出
@@ -602,6 +603,7 @@
               const url = new URL(decodedText);
               sid = url.searchParams.get('session') || sid;
               target = url.searchParams.get('target');
+              device = normalizeDeviceId(url.searchParams.get('device'));
             } catch (e) {
               debugLog('URL parse error: ' + e.message);
             }
@@ -611,8 +613,14 @@
              const params = new URLSearchParams(parts[1] || parts[0]);
              sid = params.get('session') || sid;
              target = params.get('target');
+             device = normalizeDeviceId(params.get('device'));
           }
           
+          if (device) {
+            state.linkedDeviceId = device;
+            localStorage.setItem('the_toll_device_id', device);
+            await refreshPlanByDevice();
+          }
           elements.sessionInput.value = sid;
           stopQRScan();
           loadNextExercise();
