@@ -86,6 +86,15 @@
     el.backBtn.disabled = loading;
   }
 
+  function detectCurrencyHint() {
+    if (currencyParam === 'jpy' || currencyParam === 'usd') return currencyParam;
+    const langs = Array.isArray(navigator.languages) ? navigator.languages : [];
+    const firstLocale = (langs[0] || navigator.language || '').toLowerCase();
+    const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || '').toLowerCase();
+    const isJapan = firstLocale.includes('ja') || firstLocale.includes('-jp') || tz === 'asia/tokyo';
+    return isJapan ? 'jpy' : null;
+  }
+
   async function getAccessToken() {
     const { data: sessionData } = await supabase.auth.getSession();
     let accessToken = sessionData?.session?.access_token || null;
@@ -100,9 +109,7 @@
     setLoading(true);
     setStatus(t('preparing'));
     try {
-      const currency = currencyParam === 'jpy' || currencyParam === 'usd'
-        ? currencyParam
-        : null;
+      const currency = detectCurrencyHint();
       const accessToken = extensionToken || await getAccessToken();
 
       const endpoint = accessToken ? 'create-checkout' : 'create-checkout-device';
