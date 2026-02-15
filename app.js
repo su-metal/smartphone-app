@@ -220,7 +220,7 @@
   function updateExerciseControls() {
     const sessionReady = !!((elements.sessionInput?.value || '').trim().length >= 4);
     if (elements.nextExerciseDisplay) {
-      elements.nextExerciseDisplay.classList.toggle('hidden', !!state.isPro);
+      elements.nextExerciseDisplay.classList.toggle('hidden', !!state.isPro || !sessionReady);
     }
     if (elements.proExerciseSelector) {
       elements.proExerciseSelector.classList.toggle('hidden', !(state.isPro && sessionReady));
