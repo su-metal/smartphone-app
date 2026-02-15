@@ -98,6 +98,7 @@
     sessionId: null,
     squatCount: 0,
     targetCount: 20, // デフォルト
+    pendingTargetCount: null,
     exerciseType: 'SQUAT', // SQUAT, PUSHUP, SITUP
     cycleIndex: 0,
     selectedExerciseIndex: 0,
@@ -556,25 +557,26 @@
     loadNextExercise();
     debugLog(`Session Start: ${state.exerciseType}, Index: ${state.cycleIndex}`);
 
+    const effectiveTargetRaw = targetFromUrl || state.pendingTargetCount;
+    const effectiveTarget = parseInt(effectiveTargetRaw, 10);
+
     // Settings Guard用の特別ID判定
     if (sessionId.startsWith('SET-')) {
       state.targetCount = 30;
       debugLog('SETTINGS LOCK MISSION: 30 REPS');
+    } else if (!isNaN(effectiveTarget) && effectiveTarget > 0) {
+      state.targetCount = effectiveTarget;
+      debugLog('Target from QR/URL: ' + state.targetCount);
     } else if (!state.isPro) {
       state.exerciseType = 'SQUAT';
       state.targetCount = 10;
-    } else if (targetFromUrl) {
-      const parsed = parseInt(targetFromUrl);
-      if (!isNaN(parsed) && parsed > 0) {
-        state.targetCount = parsed;
-        debugLog('Target from URL: ' + state.targetCount);
-      }
     }
     // else: state.targetCount keeps its value set in init()
     
     // UI反映 (必ず実行)
     if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = state.targetCount;
     if (elements.completeRepsDisplay) elements.completeRepsDisplay.textContent = state.targetCount;
+    state.pendingTargetCount = null;
     
     // 自動的にフルスクリーンモードに入る
     if (!document.fullscreenElement) {
@@ -618,6 +620,7 @@
              target = params.get('target');
              device = normalizeDeviceId(params.get('device'));
           }
+          state.pendingTargetCount = target;
           
           if (device) {
             state.linkedDeviceId = device;
