@@ -651,13 +651,23 @@
     elements.unlockStatus.textContent = t('sending');
     try {
       const sid = (state.sessionId || '').trim().toUpperCase();
-      const { data, error } = await state.supabase.rpc('unlock_session', { session_id: sid });
-      if (error) {
-        elements.unlockStatus.textContent = `❌ ${t('send_failed')}: ${error.message}`;
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/unlock-session-public`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ session_id: sid }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const detail = payload?.error || `HTTP ${res.status}`;
+        elements.unlockStatus.textContent = `❌ ${t('send_failed')}: ${detail}`;
         elements.unlockBtn.disabled = false;
         return;
       }
-      if (data && data.success) {
+      if (payload && payload.success) {
         elements.unlockStatus.textContent = `✅ ${t('unlock_success')}`;
         elements.unlockBtn.innerHTML = '<span>SUCCESS</span>';
       } else {
