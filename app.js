@@ -218,8 +218,9 @@
   }
 
   function updateExerciseControls() {
+    const sessionReady = !!((elements.sessionInput?.value || '').trim().length >= 4);
     if (elements.proExerciseSelector) {
-      elements.proExerciseSelector.classList.toggle('hidden', !state.isPro);
+      elements.proExerciseSelector.classList.toggle('hidden', !(state.isPro && sessionReady));
     }
     if (elements.exerciseSelect) {
       elements.exerciseSelect.disabled = !state.isPro;
@@ -614,7 +615,8 @@
           
           elements.sessionInput.value = sid;
           stopQRScan();
-          startSession(sid, target);
+          loadNextExercise();
+          updateExerciseControls();
         }, () => {}
       );
     } catch (err) { alert(t('camera_start_failed')); elements.qrReaderContainer.classList.add('hidden'); }
@@ -1078,6 +1080,11 @@
     }
     if (elements.toSessionBtn) elements.toSessionBtn.onclick = () => showScreen('session-screen');
     elements.startBtn.onclick = () => startSession();
+    if (elements.sessionInput) {
+      elements.sessionInput.oninput = () => {
+        updateExerciseControls();
+      };
+    }
     elements.scanQrBtn.onclick = () => startQRScan();
     elements.closeScanBtn.onclick = () => stopQRScan();
     elements.resetCycleBtn.onclick = (e) => {
