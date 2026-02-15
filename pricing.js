@@ -6,6 +6,7 @@
 
   const params = new URLSearchParams(window.location.search);
   const APP_LANG = params.get('lang') === 'ja' ? 'ja' : 'en';
+  const currencyParam = (params.get('currency') || '').trim().toLowerCase();
   const deviceId = (params.get('device') || '').trim();
   const source = (params.get('source') || 'app').trim();
   const extensionToken = (params.get('ext_token') || '').trim();
@@ -99,8 +100,9 @@
     setLoading(true);
     setStatus(t('preparing'));
     try {
-      const locale = (navigator.language || 'en').toLowerCase();
-      const currency = locale.startsWith('ja') ? 'jpy' : 'usd';
+      const currency = currencyParam === 'jpy' || currencyParam === 'usd'
+        ? currencyParam
+        : (APP_LANG === 'ja' ? 'jpy' : 'usd');
       const accessToken = extensionToken || await getAccessToken();
 
       const endpoint = accessToken ? 'create-checkout' : 'create-checkout-device';
