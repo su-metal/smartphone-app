@@ -365,6 +365,7 @@ h1 {
   align-items: center;
   z-index: 100;
   text-align: center;
+  pointer-events: none;
 }
 
 /* Complete Screen */
