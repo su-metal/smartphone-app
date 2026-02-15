@@ -102,7 +102,7 @@
     try {
       const currency = currencyParam === 'jpy' || currencyParam === 'usd'
         ? currencyParam
-        : (APP_LANG === 'ja' ? 'jpy' : 'usd');
+        : null;
       const accessToken = extensionToken || await getAccessToken();
 
       const endpoint = accessToken ? 'create-checkout' : 'create-checkout-device';
@@ -119,8 +119,8 @@
           };
 
       const body = accessToken
-        ? { currency, plan, lang: APP_LANG, source, device_id: deviceId || null }
-        : { device_id: deviceId, currency, plan, lang: APP_LANG, source };
+        ? { plan, lang: APP_LANG, source, device_id: deviceId || null, ...(currency ? { currency } : {}) }
+        : { device_id: deviceId, plan, lang: APP_LANG, source, ...(currency ? { currency } : {}) };
 
       if (!accessToken && !deviceId) {
         setStatus(t('needLogin'));
