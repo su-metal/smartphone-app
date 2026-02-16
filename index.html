@@ -88,8 +88,8 @@
           <p id="next-exercise-display" class="subtitle hidden" style="font-size: 0.8rem; font-family:'Roboto Mono'; font-weight:bold; color: var(--pop-black); margin-bottom:10px;">EXERCISE: (LOADING...)</p>
           
           <div id="pro-exercise-selector" class="exercise-selector hidden" style="margin-bottom:20px;">
-            <label for="exercise-select" class="scs-input-label" style="font-size:0.8rem;">OVERRIDE EXERCISE</label>
-            <select id="exercise-select" class="scs-input-field" style="padding:5px; font-size:1rem;">
+            <label for="exercise-select" class="scs-input-label">OVERRIDE EXERCISE</label>
+            <select id="exercise-select" class="scs-input-field" style="padding:10px; font-size:1.2rem;">
               <option value="0">SQUAT</option>
               <option value="1">PUSH-UP</option>
               <option value="2">SIT-UP</option>
@@ -212,7 +212,9 @@
       const googleLoginBtn = document.getElementById('google-login-btn');
       const manageSubscriptionBtn = document.getElementById('manage-subscription-btn');
       if (authGuide1) authGuide1.textContent = 'Googleアカウントで登録・ログインします。';
-      if (authGuide2) authGuide2.textContent = 'セッション開始には有料プランが必要です。';
+      if (authGuide2) authGuide2.textContent = 'セッション開始には定額プランが必要です。';
+      const excLabel = document.querySelector('label[for="exercise-select"]');
+      if (excLabel) excLabel.textContent = '種目を選択 (PRO専用)';
       if (googleLoginBtn) googleLoginBtn.textContent = 'Googleで続行';
       if (manageSubscriptionBtn) manageSubscriptionBtn.textContent = 'サブスク管理';
     }

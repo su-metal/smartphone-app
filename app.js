@@ -550,10 +550,44 @@
   // ============================================
   // セッション・QR
   // ============================================
-  function startSession(sid, targetFromUrl) {
+  async function startSession(sid, targetFromUrl) {
     const sessionId = (sid || elements.sessionInput.value).trim().toUpperCase();
     if (!sessionId || sessionId.length < 4) return alert(t('enter_session_id'));
     
+    // UIフィードバック: ロード中状態
+    const originalBtnText = elements.startBtn.innerHTML;
+    elements.startBtn.disabled = true;
+    elements.startBtn.textContent = 'CHECKING...';
+
+    // バリデーション (SET-/CFG- 以外)
+    if (!sessionId.startsWith('SET-') && !sessionId.startsWith('CFG-')) {
+      try {
+        const { data, error } = await state.supabase
+          .from('squat_sessions')
+          .select('id')
+          .eq('id', sessionId)
+          .maybeSingle();
+
+        if (error) throw error;
+        if (!data) {
+          alert(t('session_not_found'));
+          elements.startBtn.disabled = false;
+          elements.startBtn.innerHTML = originalBtnText;
+          return;
+        }
+      } catch (e) {
+        debugLog('Session validation error: ' + e.message);
+        alert('VALIDATION ERROR. PLEASE TRY AGAIN.');
+        elements.startBtn.disabled = false;
+        elements.startBtn.innerHTML = originalBtnText;
+        return;
+      }
+    }
+
+    // 成功時: 通常の初期化へ戻す
+    elements.startBtn.disabled = false;
+    elements.startBtn.innerHTML = originalBtnText;
+
     state.sessionId = sessionId;
     state.squatCount = 0;
     state.startTime = Date.now();
@@ -581,14 +615,12 @@
       state.exerciseType = 'SQUAT';
       state.targetCount = 10;
     }
-    // else: state.targetCount keeps its value set in init()
     
-    // UI反映 (必ず実行)
+    // UI反映
     if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = state.targetCount;
     if (elements.completeRepsDisplay) elements.completeRepsDisplay.textContent = state.targetCount;
     state.pendingTargetCount = null;
     
-    // 自動的にフルスクリーンモードに入る
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
         debugLog(`Auto-fullscreen failed: ${err.message}`);
