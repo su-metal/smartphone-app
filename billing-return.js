@@ -2,7 +2,14 @@
   'use strict';
 
   const params = new URLSearchParams(window.location.search);
-  const lang = params.get('lang') === 'ja' ? 'ja' : 'en';
+  function detectUiLanguage() {
+    const qLang = (params.get('lang') || '').trim().toLowerCase();
+    if (qLang === 'ja' || qLang === 'en') return qLang;
+    const langs = Array.isArray(navigator.languages) ? navigator.languages : [];
+    const firstLocale = (langs[0] || navigator.language || '').toLowerCase();
+    return firstLocale.startsWith('ja') ? 'ja' : 'en';
+  }
+  const lang = detectUiLanguage();
   const checkout = (params.get('checkout') || '').toLowerCase();
   const portal = (params.get('portal') || '').toLowerCase();
 

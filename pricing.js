@@ -366,6 +366,11 @@
 
   function backToApp() {
     if (source === 'extension') {
+      const fromExtensionPage = (document.referrer || '').startsWith('chrome-extension://');
+      if (fromExtensionPage || window.history.length > 1) {
+        window.history.back();
+        return;
+      }
       window.close();
       return;
     }
