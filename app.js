@@ -732,9 +732,9 @@
       updateStatus('NO PERSON'); 
       elements.guide.classList.remove('hidden'); 
       
-      // 音声ガイダンス (10秒おき)
+      // 音声ガイダンス (10秒おき) - 低優先度
       if (Date.now() - state._lastGuideSpeak > 10000) {
-        speakText("Stand back. Show us your body.");
+        speakText("Stand back. Show us your body.", false);
         state._lastGuideSpeak = Date.now();
       }
 
@@ -779,9 +779,9 @@
       updateStatus(visibilityMsg);
       elements.guide.classList.remove('hidden');
       
-      // 音声ガイダンス (10秒おき) Visibilityが低い場合
+      // 音声ガイダンス (10秒おき) Visibilityが低い場合 - 低優先度
       if (Date.now() - state._lastGuideSpeak > 10000) {
-        speakText("Stand back. Show us your body.");
+        speakText("Stand back. Show us your body.", false);
         state._lastGuideSpeak = Date.now();
       }
 
@@ -1051,9 +1051,16 @@
     osc.start(); osc.stop(state.audioContext.currentTime + d);
   }
 
-  function speakText(text) {
+  function speakText(text, cancelExisting = true) {
     if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
+    
+    // Mission Completeなどの重要音声が流れている間に低優先度音声でキャンセルされないように
+    if (window.speechSynthesis.speaking && !cancelExisting) return;
+
+    if (cancelExisting) {
+      window.speechSynthesis.cancel();
+    }
+    
     const utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'en-US'; utter.rate = 1.1;
     window.speechSynthesis.speak(utter);
