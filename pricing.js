@@ -16,6 +16,7 @@
   const currencyParam = (params.get('currency') || '').trim().toLowerCase();
   const deviceId = (params.get('device') || '').trim();
   const source = (params.get('source') || 'app').trim();
+  const returnUrl = (params.get('return_url') || '').trim();
   const extensionToken = (params.get('ext_token') || '').trim();
 
   if (extensionToken) {
@@ -66,7 +67,7 @@
       preparing: 'Preparing checkout...',
       failed: 'Failed to prepare checkout.',
       needLogin: 'Please log in and link your account first.',
-      footerMarquee: 'INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW //',
+      footerMarquee: 'START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY //',
       footerCtaLine1: 'UNLEASH',
       footerCtaMini1: 'Unlock it,',
       footerCtaLine2: 'YOUR',
@@ -114,7 +115,7 @@
       preparing: '決済を準備しています...',
       failed: '決済の準備に失敗しました。',
       needLogin: '先にログインとデバイス連携を行ってください。',
-      footerMarquee: '今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める //',
+      footerMarquee: '準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める //',
       footerCtaLine1: '解き放つ',
       footerCtaMini1: 'さあ、',
       footerCtaLine2: 'あなたの',
@@ -124,8 +125,8 @@
   };
 
   const PRICE_BOOK = {
-    usd: { monthly: 4.99, yearly: 39.99, currency: 'USD' },
-    jpy: { monthly: 500, yearly: 5980, currency: 'JPY' }
+    usd: { monthly: 4.99, yearly: 49, currency: 'USD' },
+    jpy: { monthly: 500, yearly: 4980, currency: 'JPY' }
   };
 
   const el = {
@@ -366,6 +367,15 @@
 
   function backToApp() {
     if (source === 'extension') {
+      if (returnUrl.startsWith('chrome-extension://')) {
+        window.location.href = returnUrl;
+        return;
+      }
+      const fromExtensionPage = (document.referrer || '').startsWith('chrome-extension://');
+      if (fromExtensionPage || window.history.length > 1) {
+        window.history.back();
+        return;
+      }
       window.close();
       return;
     }

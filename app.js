@@ -10,12 +10,23 @@
   const APP_VERSION = 'v2.17 (Rescue Update)';
   const SUPABASE_URL = 'https://qcnzleiyekbgsiyomwin.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbnpsZWl5ZWtiZ3NpeW9td2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0Mjk2NzMsImV4cCI6MjA4NDAwNTY3M30.NlGUfxDPzMgtu_J0vX7FMe-ikxafboGh5GMr-tsaLfI';
-  const APP_LANG = new URLSearchParams(window.location.search).get('lang') === 'ja' ? 'ja' : 'en';
+  function detectUiLanguage() {
+    const params = new URLSearchParams(window.location.search);
+    const qLang = (params.get('lang') || '').trim().toLowerCase();
+    if (qLang === 'ja' || qLang === 'en') return qLang;
+    const langs = Array.isArray(navigator.languages) ? navigator.languages : [];
+    const firstLocale = (langs[0] || navigator.language || '').toLowerCase();
+    return firstLocale.startsWith('ja') ? 'ja' : 'en';
+  }
+  const APP_LANG = detectUiLanguage();
   const I18N = {
     en: {
       logged_in_as: 'Logged in:',
       membership_checking: 'Checking membership...',
+      membership_checking_badge: 'MEMBERSHIP: CHECKING',
       membership_check_failed: 'Membership check failed',
+      membership_verify_failed: 'MEMBERSHIP: VERIFY FAILED',
+      membership_error: 'MEMBERSHIP: ERROR ({reason})',
       membership_active: 'MEMBERSHIP: ACTIVE',
       membership_trial: 'MEMBERSHIP: TRIAL',
       membership_free: 'MEMBERSHIP: FREE',
@@ -41,12 +52,45 @@
       unlock_success: 'Unlocked successfully!',
       session_not_found: 'Session not found',
       ai_loading: 'Loading AI...',
-      confirm_cancel_training: 'Stop this training session?'
+      confirm_cancel_training: 'Stop this training session?',
+      login_before_manage_subscription: 'Please log in again before opening subscription settings.',
+      validation_error: 'Validation error. Please try again.',
+      checking: 'CHECKING...',
+      exercise_prefix: 'EXERCISE: {exercise}',
+      exercise_squat: 'SQUAT',
+      exercise_pushup: 'PUSH-UP',
+      exercise_situp: 'SIT-UP',
+      hint_squat: 'SQUAT DEEP',
+      hint_pushup: 'LOWER YOUR BODY',
+      hint_situp: 'USE SIDE VIEW',
+      unlock_btn: 'UNLOCK PC',
+      unlock_success_btn: 'SUCCESS',
+      exit_label: 'EXIT',
+      status_ready: 'READY',
+      status_no_person: 'NO PERSON',
+      status_show_full_body: 'SHOW FULL BODY',
+      status_show_torso: 'SHOW TORSO',
+      status_show_upper_body: 'SHOW UPPER BODY',
+      status_stand_ready: 'STAND READY...',
+      status_down: 'DOWN',
+      status_show_shoulders: 'SHOW SHOULDERS',
+      status_calibrating: 'CALIBRATING...',
+      status_go_down: 'GO DOWN',
+      status_reps: '{count} REPS',
+      status_recalibrating: 'RE-CALIBRATING',
+      voice_stand_back: 'Stand back. Show us your body.',
+      voice_ready_start: 'Ready. Start!',
+      voice_stay_still: 'Please stay still.',
+      voice_situp_still: 'Sit up and stay still. Side view recommended.',
+      voice_mission_complete: 'Mission Complete!'
     },
     ja: {
       logged_in_as: 'ログイン中:',
       membership_checking: '会員確認中...',
+      membership_checking_badge: '会員ステータス: 確認中',
       membership_check_failed: '会員確認に失敗しました',
+      membership_verify_failed: '会員ステータス: 確認失敗',
+      membership_error: '会員ステータス: エラー ({reason})',
       membership_active: '会員ステータス: 有効',
       membership_trial: '会員ステータス: トライアル',
       membership_free: '会員ステータス: 無料',
@@ -72,7 +116,37 @@
       unlock_success: 'アンロック成功！',
       session_not_found: 'セッションなし',
       ai_loading: 'AI読み込み中...',
-      confirm_cancel_training: 'トレーニングを中断しますか？'
+      confirm_cancel_training: 'トレーニングを中断しますか？',
+      login_before_manage_subscription: 'サブスク設定を開く前に再ログインしてください。',
+      validation_error: 'セッション確認に失敗しました。もう一度お試しください。',
+      checking: '確認中...',
+      exercise_prefix: '種目: {exercise}',
+      exercise_squat: 'スクワット',
+      exercise_pushup: '腕立て伏せ',
+      exercise_situp: '腹筋',
+      hint_squat: '深くしゃがむ',
+      hint_pushup: '体を下げる',
+      hint_situp: '横向きで行う',
+      unlock_btn: 'PCをアンロック',
+      unlock_success_btn: '成功',
+      exit_label: '終了',
+      status_ready: '準備OK',
+      status_no_person: '人物を検出できません',
+      status_show_full_body: '全身を映してください',
+      status_show_torso: '上半身を映してください',
+      status_show_upper_body: '頭と肩を映してください',
+      status_stand_ready: '姿勢を整えてください...',
+      status_down: '下げる',
+      status_show_shoulders: '肩を映してください',
+      status_calibrating: 'キャリブレーション中...',
+      status_go_down: '倒れる',
+      status_reps: '{count} 回',
+      status_recalibrating: '再キャリブレーション中',
+      voice_stand_back: '少し離れて全身を映してください。',
+      voice_ready_start: '準備OK。スタート！',
+      voice_stay_still: 'そのまま動かないでください。',
+      voice_situp_still: '腹筋姿勢で止まってください。横向き推奨です。',
+      voice_mission_complete: 'ミッション完了！'
     }
   };
   const t = (key, vars = {}) => {
@@ -121,9 +195,9 @@
   };
  
   const EXERCISES = [
-    { type: 'SQUAT', label: 'SQUAT', defaultCount: 20 },
-    { type: 'PUSHUP', label: 'PUSH-UP', defaultCount: 20 },
-    { type: 'SITUP', label: 'SIT-UP', defaultCount: 20 }
+    { type: 'SQUAT', labelKey: 'exercise_squat', defaultCount: 20 },
+    { type: 'PUSHUP', labelKey: 'exercise_pushup', defaultCount: 20 },
+    { type: 'SITUP', labelKey: 'exercise_situp', defaultCount: 20 }
   ];
   const STORAGE_SELECTED_EXERCISE = 'the_toll_selected_exercise';
 
@@ -252,17 +326,18 @@
     state.selectedExerciseIndex = safeIdx;
     state.exerciseType = selected.type;
 
+    const selectedLabel = t(selected.labelKey);
     if (elements.exerciseSelect) elements.exerciseSelect.value = String(safeIdx);
-    if (elements.exerciseLabel) elements.exerciseLabel.textContent = selected.label;
+    if (elements.exerciseLabel) elements.exerciseLabel.textContent = selectedLabel;
     if (elements.nextExerciseDisplay) {
-      elements.nextExerciseDisplay.textContent = `EXERCISE: ${selected.label}`;
+      elements.nextExerciseDisplay.textContent = t('exercise_prefix', { exercise: selectedLabel });
     }
     if (elements.cycleDebugInfo) elements.cycleDebugInfo.textContent = `ID: ${safeIdx}`;
 
     if (elements.hint) {
-      if (selected.type === 'SQUAT') elements.hint.textContent = 'SQUAT DEEP';
-      else if (selected.type === 'PUSHUP') elements.hint.textContent = 'LOWER YOUR BODY';
-      else if (selected.type === 'SITUP') elements.hint.textContent = 'USE SIDE VIEW';
+      if (selected.type === 'SQUAT') elements.hint.textContent = t('hint_squat');
+      else if (selected.type === 'PUSHUP') elements.hint.textContent = t('hint_pushup');
+      else if (selected.type === 'SITUP') elements.hint.textContent = t('hint_situp');
     }
 
     if (elements.overlayUi) {
@@ -368,7 +443,7 @@
     elements.toSessionBtn.textContent = t('membership_checking');
     elements.subscribeBtn.classList.add('hidden');
     setManageSubscriptionVisible(false);
-    elements.subscriptionStatusBadge.textContent = 'MEMBERSHIP: CHECKING';
+    elements.subscriptionStatusBadge.textContent = t('membership_checking_badge');
     elements.subscriptionStatusBadge.className = 'status-inactive';
 
     try {
@@ -390,7 +465,7 @@
 
       if (!profile) {
         debugLog('Profile missing or unreadable: ' + (lastError?.message || 'no row'));
-        elements.subscriptionStatusBadge.textContent = 'MEMBERSHIP: VERIFY FAILED';
+        elements.subscriptionStatusBadge.textContent = t('membership_verify_failed');
         elements.subscriptionStatusBadge.className = 'status-inactive';
         setTrialBadge('');
         elements.toSessionBtn.disabled = true;
@@ -475,7 +550,7 @@
     } catch (e) {
       const msg = (e && e.message) ? e.message : String(e);
       debugLog('Profile logic crash: ' + msg);
-      elements.subscriptionStatusBadge.textContent = `MEMBERSHIP: ERROR (${msg.slice(0, 18)})`;
+      elements.subscriptionStatusBadge.textContent = t('membership_error', { reason: msg.slice(0, 18) });
       elements.subscriptionStatusBadge.className = 'status-inactive';
       setTrialBadge('');
       elements.toSessionBtn.disabled = true;
@@ -520,7 +595,7 @@
       const { data: sessionData } = await state.supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
       if (!accessToken) {
-        alert('Please log in again before opening subscription settings.');
+        alert(t('login_before_manage_subscription'));
         return;
       }
 
@@ -557,7 +632,7 @@
     // UIフィードバック: ロード中状態
     const originalBtnText = elements.startBtn.innerHTML;
     elements.startBtn.disabled = true;
-    elements.startBtn.textContent = 'CHECKING...';
+    elements.startBtn.textContent = t('checking');
 
     // バリデーション (SET-/CFG- 以外)
     if (!sessionId.startsWith('SET-') && !sessionId.startsWith('CFG-')) {
@@ -577,7 +652,7 @@
         }
       } catch (e) {
         debugLog('Session validation error: ' + e.message);
-        alert('VALIDATION ERROR. PLEASE TRY AGAIN.');
+        alert(t('validation_error'));
         elements.startBtn.disabled = false;
         elements.startBtn.innerHTML = originalBtnText;
         return;
@@ -721,7 +796,7 @@
       }
       if (payload && payload.success) {
         elements.unlockStatus.textContent = `✅ ${t('unlock_success')}`;
-        elements.unlockBtn.innerHTML = '<span>SUCCESS</span>';
+        elements.unlockBtn.innerHTML = `<span>${t('unlock_success_btn')}</span>`;
       } else {
         elements.unlockStatus.textContent = `⚠️ ${t('session_not_found')} (${sid})`;
         elements.unlockBtn.disabled = false;
@@ -754,19 +829,19 @@
     });
     elements.canvas.width = elements.camera.videoWidth;
     elements.canvas.height = elements.camera.videoHeight;
-    updateStatus('READY');
+    updateStatus(t('status_ready'));
   }
 
   function onPoseResults(results) {
     const ctx = elements.canvas.getContext('2d');
     ctx.clearRect(0, 0, elements.canvas.width, elements.canvas.height);
     if (!results.poseLandmarks) { 
-      updateStatus('NO PERSON'); 
+      updateStatus(t('status_no_person')); 
       elements.guide.classList.remove('hidden'); 
       
       // 音声ガイダンス (10秒おき) - 低優先度
       if (Date.now() - state._lastGuideSpeak > 10000) {
-        speakText("Stand back. Show us your body.", false);
+        speakText(t('voice_stand_back'), false);
         state._lastGuideSpeak = Date.now();
       }
 
@@ -787,17 +862,17 @@
     
     // 種目に応じた検知要件の定義
     let requiredLandmarks = [];
-    let visibilityMsg = 'SHOW FULL BODY';
+    let visibilityMsg = t('status_show_full_body');
     
     if (state.exerciseType === 'SQUAT') {
       requiredLandmarks = [11, 12, 23, 24, 25, 26, 27, 28]; // 全身
-      visibilityMsg = 'SHOW FULL BODY';
+      visibilityMsg = t('status_show_full_body');
     } else if (state.exerciseType === 'PUSHUP') {
       requiredLandmarks = [11, 12, 23, 24]; // 肩と腰
-      visibilityMsg = 'SHOW TORSO';
+      visibilityMsg = t('status_show_torso');
     } else if (state.exerciseType === 'SITUP') {
       requiredLandmarks = [0, 11, 12]; // 頭と肩
-      visibilityMsg = 'SHOW UPPER BODY';
+      visibilityMsg = t('status_show_upper_body');
     }
     
     const isVisible = requiredLandmarks.every(idx => lm[idx] && lm[idx].visibility > 0.5);
@@ -813,7 +888,7 @@
       
       // 音声ガイダンス (10秒おき) Visibilityが低い場合 - 低優先度
       if (Date.now() - state._lastGuideSpeak > 10000) {
-        speakText("Stand back. Show us your body.", false);
+        speakText(t('voice_stand_back'), false);
         state._lastGuideSpeak = Date.now();
       }
 
@@ -844,7 +919,7 @@
      const exitBtn = document.createElement('button');
      exitBtn.id = 'exercise-exit-btn';
      exitBtn.className = 'absolute top-4 right-4 bg-red-600 text-white px-4 py-2 rounded font-bold z-50';
-     exitBtn.textContent = 'EXIT';
+     exitBtn.textContent = t('exit_label');
      exitBtn.onclick = cancelSession;
      
      container.appendChild(exitBtn);
@@ -856,20 +931,20 @@
     
     // SQUATにもキャリブレーション（準備完了通知）を追加
     if (state.startTime && (Date.now() - state.startTime < 2000)) {
-        updateStatus('STAND READY...');
+        updateStatus(t('status_stand_ready'));
         return;
     }
     
     if (!state._squatReadySpoken) {
         playSoundCount();
-        speakText("Ready. Start!");
+        speakText(t('voice_ready_start'));
         state._squatReadySpoken = true;
     }
 
     if (!state.isSquatting && leftAngle < 105 && rightAngle < 105) {
       state.isSquatting = true;
       playSoundSquatDown();
-      updateStatus('DOWN');
+      updateStatus(t('status_down'));
     } else if (state.isSquatting && leftAngle > 165 && rightAngle > 165) {
       countRep();
     }
@@ -877,7 +952,7 @@
  
   function handlePushupDetection(lm) {
     if (lm[11].visibility < 0.6 || lm[12].visibility < 0.6) {
-      updateStatus('SHOW SHOULDERS');
+      updateStatus(t('status_show_shoulders'));
       state.calibrationBuffer = []; // 隠れたらバッファもリセット
       return;
     }
@@ -886,11 +961,11 @@
     
     // 基準が設定されていない場合、安定するまで待つ (キャリブレーション)
     if (state.pushupBaseline === null) {
-      updateStatus('CALIBRATING...');
+      updateStatus(t('status_calibrating'));
       
       // 音声ガイダンス (最初だけ)
       if (!state._lastCalibSpeak || Date.now() - state._lastCalibSpeak > 5000) {
-        speakText("Please stay still.");
+        speakText(t('voice_stay_still'));
         state._lastCalibSpeak = Date.now();
       }
 
@@ -905,7 +980,7 @@
           state.calibrationBuffer = [];
           debugLog(`Baseline SET: ${avg.toFixed(3)} (Stable)`);
           playSoundCount();
-          speakText("Ready. Start!"); // 開始の合図
+          speakText(t('voice_ready_start')); // 開始の合図
         } else {
           state.calibrationBuffer.shift(); // 安定しないので古いデータを捨てる
         }
@@ -926,7 +1001,7 @@
     if (!state.isSquatting && diff > thresholdDown) {
       state.isSquatting = true;
       playSoundSquatDown();
-      updateStatus('DOWN');
+      updateStatus(t('status_down'));
     } else if (state.isSquatting && diff < thresholdUp) {
       countRep();
     }
@@ -936,7 +1011,7 @@
     // 鼻か肩、見えている部位の平均Y座標を使う (より柔軟に)
     const pts = [lm[0], lm[11], lm[12]].filter(p => p.visibility > 0.5);
     if (pts.length === 0) {
-      updateStatus('SHOW UPPER BODY');
+      updateStatus(t('status_show_upper_body'));
       state.calibrationBuffer = [];
       return;
     }
@@ -948,10 +1023,10 @@
     
     // 基準が設定されていない場合、安定するまで待つ
     if (state.situpBaseline === null) {
-      updateStatus('CALIBRATING...');
+      updateStatus(t('status_calibrating'));
 
       if (!state._lastCalibSpeak || Date.now() - state._lastCalibSpeak > 8000) {
-        speakText("Sit up and stay still. Side view recommended.");
+        speakText(t('voice_situp_still'));
         state._lastCalibSpeak = Date.now();
       }
 
@@ -966,7 +1041,7 @@
           state.calibrationBuffer = [];
           debugLog(`Situp Baseline SET: ${avg.toFixed(3)}`);
           playSoundCount();
-          speakText("Ready. Start!");
+          speakText(t('voice_ready_start'));
         } else {
           state.calibrationBuffer.shift();
         }
@@ -986,7 +1061,7 @@
     if (!state.isSquatting && diff > thresholdDown) {
       state.isSquatting = true;
       playSoundSquatDown();
-      updateStatus('GO DOWN');
+      updateStatus(t('status_go_down'));
     } else if (state.isSquatting && diff < thresholdUp) {
       countRep();
     }
@@ -1004,7 +1079,7 @@
       onSquatComplete();
     } else {
       playSoundCount();
-      updateStatus(`${state.squatCount} REPS`);
+      updateStatus(t('status_reps', { count: state.squatCount }));
     }
   }
  
@@ -1054,7 +1129,7 @@
     elements.sessionTimeLabel.textContent = time;
     if (elements.completeRepsDisplay) elements.completeRepsDisplay.textContent = state.squatCount;
     
-    speakText("Mission Complete!");
+    speakText(t('voice_mission_complete'));
     
     // カメラを停止
     if (state.poseCamera) {
@@ -1094,7 +1169,8 @@
     }
     
     const utter = new SpeechSynthesisUtterance(text);
-    utter.lang = 'en-US'; utter.rate = 1.1;
+    utter.lang = APP_LANG === 'ja' ? 'ja-JP' : 'en-US';
+    utter.rate = 1.1;
     window.speechSynthesis.speak(utter);
   }
 
@@ -1119,8 +1195,8 @@
     elements.sessionTimeLabel.textContent = '--';
     elements.unlockStatus.textContent = '';
     elements.unlockBtn.disabled = false;
-    elements.unlockBtn.innerHTML = '<span>UNLOCK PC</span>';
-    updateStatus('READY');
+    elements.unlockBtn.innerHTML = `<span>${t('unlock_btn')}</span>`;
+    updateStatus(t('status_ready'));
     updateExerciseControls();
 
     // カメラを完全に停止
@@ -1155,7 +1231,7 @@
     if (exitBtn) exitBtn.remove();
 
     showScreen('session-screen');
-    updateStatus('READY');
+    updateStatus(t('status_ready'));
   }
 
   async function init() {
@@ -1266,13 +1342,14 @@
         state.situpBaseline = null;
         state.calibrationBuffer = [];
         debugLog('Recalibration requested');
-        updateStatus('RE-CALIBRATING');
+        updateStatus(t('status_recalibrating'));
       };
     }
     
     // EXITボタン (New)
     const exitBtn = document.getElementById('exit-btn');
     if (exitBtn) {
+      exitBtn.textContent = t('exit_label');
       exitBtn.onclick = () => {
         if(!confirm(t('confirm_cancel_training'))) return;
         cancelSession();
