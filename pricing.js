@@ -16,6 +16,7 @@
   const currencyParam = (params.get('currency') || '').trim().toLowerCase();
   const deviceId = (params.get('device') || '').trim();
   const source = (params.get('source') || 'app').trim();
+  const returnUrl = (params.get('return_url') || '').trim();
   const extensionToken = (params.get('ext_token') || '').trim();
 
   if (extensionToken) {
@@ -366,6 +367,10 @@
 
   function backToApp() {
     if (source === 'extension') {
+      if (returnUrl.startsWith('chrome-extension://')) {
+        window.location.href = returnUrl;
+        return;
+      }
       const fromExtensionPage = (document.referrer || '').startsWith('chrome-extension://');
       if (fromExtensionPage || window.history.length > 1) {
         window.history.back();

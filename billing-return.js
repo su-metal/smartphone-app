@@ -12,6 +12,8 @@
   const lang = detectUiLanguage();
   const checkout = (params.get('checkout') || '').toLowerCase();
   const portal = (params.get('portal') || '').toLowerCase();
+  const source = (params.get('source') || '').toLowerCase();
+  const device = (params.get('device') || '').trim();
 
   const I18N = {
     en: {
@@ -23,6 +25,8 @@
       portalReturn: 'Subscription portal has been closed.',
       closing: 'This tab will close automatically. If it stays open, close it and return to the extension popup.',
       close: 'CLOSE',
+      backToPricing: 'BACK TO PRICING',
+      returningPricing: 'Returning to pricing page...',
     },
     ja: {
       title: 'THE TOLL - 決済結果',
@@ -33,6 +37,8 @@
       portalReturn: 'サブスクリプション管理画面を閉じました。',
       closing: 'このタブは自動で閉じます。閉じない場合は手動で閉じて拡張ポップアップに戻ってください。',
       close: '閉じる',
+      backToPricing: '料金ページに戻る',
+      returningPricing: '料金プランページへ戻ります...',
     }
   };
 
@@ -50,10 +56,27 @@
     return t('unknown');
   }
 
+  function getPricingUrl() {
+    const qs = new URLSearchParams();
+    qs.set('lang', lang);
+    if (source) qs.set('source', source);
+    if (device) qs.set('device', device);
+    return `pricing.html?${qs.toString()}`;
+  }
+
+  function goToPricing() {
+    subMessageEl.textContent = t('returningPricing');
+    window.location.href = getPricingUrl();
+  }
+
   function tryClose() {
+    if (source === 'extension') {
+      goToPricing();
+      return;
+    }
+
     window.close();
     setTimeout(() => {
-      // If the browser blocks close(), keep the fallback UI visible.
       subMessageEl.textContent = t('closing');
     }, 300);
   }
@@ -63,8 +86,10 @@
   subtitleEl.textContent = t('subtitle');
   messageEl.textContent = getMessage();
   subMessageEl.textContent = t('closing');
-  closeBtn.textContent = t('close');
+  closeBtn.textContent = source === 'extension' ? t('backToPricing') : t('close');
   closeBtn.addEventListener('click', tryClose);
 
-  setTimeout(tryClose, 900);
+  if (source !== 'extension') {
+    setTimeout(tryClose, 900);
+  }
 })();
