@@ -374,17 +374,12 @@
 
   function backToApp() {
     if (source === 'extension') {
-      const canRedirectToWebReturn = /^https?:\/\//.test((params.get('return_url') || '').trim());
-      if (canRedirectToWebReturn) {
-        window.location.href = (params.get('return_url') || '').trim();
-        return;
-      }
-      const fromExtensionPage = (document.referrer || '').startsWith('chrome-extension://');
-      if (fromExtensionPage || window.history.length > 1) {
-        window.history.back();
-        return;
-      }
       window.close();
+      setTimeout(() => {
+        if (!document.hidden) {
+          window.history.back();
+        }
+      }, 200);
       return;
     }
     const qs = new URLSearchParams();
