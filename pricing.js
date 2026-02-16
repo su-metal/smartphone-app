@@ -16,7 +16,6 @@
   const currencyParam = (params.get('currency') || '').trim().toLowerCase();
   const deviceId = (params.get('device') || '').trim();
   const source = (params.get('source') || 'app').trim();
-  const returnUrl = (params.get('return_url') || '').trim();
   const extensionToken = (params.get('ext_token') || '').trim();
 
   if (extensionToken) {
@@ -367,8 +366,9 @@
 
   function backToApp() {
     if (source === 'extension') {
-      if (returnUrl.startsWith('chrome-extension://')) {
-        window.location.href = returnUrl;
+      const canRedirectToWebReturn = /^https?:\/\//.test((params.get('return_url') || '').trim());
+      if (canRedirectToWebReturn) {
+        window.location.href = (params.get('return_url') || '').trim();
         return;
       }
       const fromExtensionPage = (document.referrer || '').startsWith('chrome-extension://');

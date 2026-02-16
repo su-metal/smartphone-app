@@ -56,6 +56,8 @@
     return t('unknown');
   }
 
+  const hasBillingSignal = !!checkout || !!portal;
+
   function getPricingUrl() {
     const qs = new URLSearchParams();
     qs.set('lang', lang);
@@ -70,7 +72,7 @@
   }
 
   function tryClose() {
-    if (source === 'extension') {
+    if (source === 'extension' || hasBillingSignal) {
       goToPricing();
       return;
     }
@@ -86,10 +88,10 @@
   subtitleEl.textContent = t('subtitle');
   messageEl.textContent = getMessage();
   subMessageEl.textContent = t('closing');
-  closeBtn.textContent = source === 'extension' ? t('backToPricing') : t('close');
+  closeBtn.textContent = (source === 'extension' || hasBillingSignal) ? t('backToPricing') : t('close');
   closeBtn.addEventListener('click', tryClose);
 
-  if (source !== 'extension') {
+  if (source !== 'extension' && !hasBillingSignal) {
     setTimeout(tryClose, 900);
   }
 })();
