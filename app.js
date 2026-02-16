@@ -114,6 +114,8 @@
     calibrationBuffer: [], // NEW: 安定判定用のバッファ
     _lastPersonTs: null,
     _lastPushLog: null,
+    _lastCalibSpeak: 0,
+    _lastGuideSpeak: 0,
     _squatReadySpoken: false,
     _membershipCheckInFlight: false
   };
@@ -220,7 +222,8 @@
   }
 
   function updateExerciseControls() {
-    const sessionReady = !!((elements.sessionInput?.value || '').trim().length >= 4);
+    // 8文字以上で有効化 (以前の4文字から変更)
+    const sessionReady = !!((elements.sessionInput?.value || '').trim().length >= 8);
     if (elements.startBtn) {
       elements.startBtn.disabled = !sessionReady;
     }
@@ -728,6 +731,13 @@
     if (!results.poseLandmarks) { 
       updateStatus('NO PERSON'); 
       elements.guide.classList.remove('hidden'); 
+      
+      // 音声ガイダンス (10秒おき)
+      if (Date.now() - state._lastGuideSpeak > 10000) {
+        speakText("Stand back. Show us your body.");
+        state._lastGuideSpeak = Date.now();
+      }
+
       // 2秒以上人がいなければ基準をリセット
       if (state._lastPersonTs && Date.now() - state._lastPersonTs > 2000) {
         if (state.pushupBaseline !== null || state.situpBaseline !== null) {
@@ -768,6 +778,13 @@
     if (!isVisible) {
       updateStatus(visibilityMsg);
       elements.guide.classList.remove('hidden');
+      
+      // 音声ガイダンス (10秒おき) Visibilityが低い場合
+      if (Date.now() - state._lastGuideSpeak > 10000) {
+        speakText("Stand back. Show us your body.");
+        state._lastGuideSpeak = Date.now();
+      }
+
       return;
     }
     
