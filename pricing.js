@@ -16,6 +16,8 @@
   const currencyParam = (params.get('currency') || '').trim().toLowerCase();
   const deviceId = (params.get('device') || '').trim();
   const source = (params.get('source') || 'app').trim();
+  const checkout = (params.get('checkout') || '').trim().toLowerCase();
+  const portal = (params.get('portal') || '').trim().toLowerCase();
   const extensionToken = (params.get('ext_token') || '').trim();
 
   if (extensionToken) {
@@ -65,6 +67,9 @@
       opening: 'Opening Stripe checkout...',
       preparing: 'Preparing checkout...',
       failed: 'Failed to prepare checkout.',
+      checkoutSuccess: 'Payment completed successfully.',
+      checkoutCancel: 'Payment was canceled.',
+      portalReturn: 'Returned from subscription portal.',
       needLogin: 'Please log in and link your account first.',
       footerMarquee: 'START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY //',
       footerCtaLine1: 'UNLEASH',
@@ -113,6 +118,9 @@
       opening: 'Stripe決済画面を開いています...',
       preparing: '決済を準備しています...',
       failed: '決済の準備に失敗しました。',
+      checkoutSuccess: '決済が完了しました。',
+      checkoutCancel: '決済はキャンセルされました。',
+      portalReturn: 'サブスクリプション管理画面から戻りました。',
       needLogin: '先にログインとデバイス連携を行ってください。',
       footerMarquee: '準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める //',
       footerCtaLine1: '解き放つ',
@@ -394,6 +402,17 @@
   }
 
   applyTextAndPrice();
+  if (checkout === 'success') setStatus(t('checkoutSuccess'));
+  else if (checkout === 'cancel') setStatus(t('checkoutCancel'));
+  else if (portal === 'return') setStatus(t('portalReturn'));
+
+  if (checkout || portal) {
+    params.delete('checkout');
+    params.delete('portal');
+    const clean = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    window.history.replaceState({}, '', clean);
+  }
+
   el.monthlyBtn.addEventListener('click', () => startCheckout('monthly'));
   el.yearlyBtn.addEventListener('click', () => startCheckout('yearly'));
   el.backBtn.addEventListener('click', backToApp);
