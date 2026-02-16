@@ -1272,14 +1272,20 @@ select.scs-input-field option {
 
 .scs-hud-center {
   text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .scs-hud-huge-count {
   font-family: var(--font-display);
-  font-size: 8rem;
+  font-size: 18rem;
   color: var(--pop-white);
-  text-shadow: 4px 4px 0px black;
-  line-height: 1;
+  text-shadow: 10px 10px 0px black;
+  line-height: 0.8;
+  display: block;
 }
 
 /* Auth Buttons override */

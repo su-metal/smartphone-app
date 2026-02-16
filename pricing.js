@@ -5,7 +5,14 @@
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbnpsZWl5ZWtiZ3NpeW9td2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg0Mjk2NzMsImV4cCI6MjA4NDAwNTY3M30.NlGUfxDPzMgtu_J0vX7FMe-ikxafboGh5GMr-tsaLfI';
 
   const params = new URLSearchParams(window.location.search);
-  const APP_LANG = params.get('lang') === 'ja' ? 'ja' : 'en';
+  function detectUiLanguage() {
+    const qLang = (params.get('lang') || '').trim().toLowerCase();
+    if (qLang === 'ja' || qLang === 'en') return qLang;
+    const langs = Array.isArray(navigator.languages) ? navigator.languages : [];
+    const firstLocale = (langs[0] || navigator.language || '').toLowerCase();
+    return firstLocale.startsWith('ja') ? 'ja' : 'en';
+  }
+  let APP_LANG = detectUiLanguage();
   const currencyParam = (params.get('currency') || '').trim().toLowerCase();
   const deviceId = (params.get('device') || '').trim();
   const source = (params.get('source') || 'app').trim();
@@ -21,6 +28,7 @@
     en: {
       title: 'THE TOLL - Pricing',
       subtitle: 'Choose Your Plan',
+      protocolBadge: 'PAYMENT PROTOCOL // 04',
       headline: 'Build focus and movement into every work session.',
       subcopy: 'Choose a plan and continue to secure Stripe checkout.',
       trialNote: '14-day free trial available for new accounts.',
@@ -33,8 +41,11 @@
       monthlySub: 'Flexible billing. Cancel anytime.',
       yearlyCta: 'Start yearly',
       monthlyCta: 'Start monthly',
+      monthlyFeature2: 'Core Features',
+      monthlyFeature3: 'Standard Support',
       yearlySavePct: 'Save {pct}% vs monthly',
       yearlySaveAmount: 'Save {amount} vs monthly total',
+      yearlyFeature3: 'Priority Support',
       compareTitle: 'Free vs Pro',
       featureCol: 'Feature',
       freeCol: 'Free',
@@ -54,11 +65,18 @@
       opening: 'Opening Stripe checkout...',
       preparing: 'Preparing checkout...',
       failed: 'Failed to prepare checkout.',
-      needLogin: 'Please log in and link your account first.'
+      needLogin: 'Please log in and link your account first.',
+      footerMarquee: 'INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW // INSTALL NOW //',
+      footerCtaLine1: 'UNLEASH',
+      footerCtaMini1: 'Unlock it,',
+      footerCtaLine2: 'YOUR',
+      footerCtaMini2: 'focus.',
+      footerCopy: '© 2026 THE TOLL // SYSTEM ACTIVE // VER 1.0'
     },
     ja: {
       title: 'THE TOLL - 料金プラン',
       subtitle: 'プランを選択',
+      protocolBadge: '決済プロトコル // 04',
       headline: '仕事中の集中力と運動習慣を、同時に作る。',
       subcopy: 'プランを選択すると、Stripeの安全な決済に進みます。',
       trialNote: '新規アカウントは14日間の無料体験を利用できます。',
@@ -71,8 +89,11 @@
       monthlySub: '柔軟な月払い。いつでも解約可能です。',
       yearlyCta: '年額で始める',
       monthlyCta: '月額で始める',
+      monthlyFeature2: '基本機能',
+      monthlyFeature3: '標準サポート',
       yearlySavePct: '月額合計より {pct}% お得',
       yearlySaveAmount: '月額合計より {amount} お得',
+      yearlyFeature3: '優先サポート',
       compareTitle: 'FREE と PRO の比較',
       featureCol: '機能',
       freeCol: 'FREE',
@@ -92,7 +113,13 @@
       opening: 'Stripe決済画面を開いています...',
       preparing: '決済を準備しています...',
       failed: '決済の準備に失敗しました。',
-      needLogin: '先にログインとデバイス連携を行ってください。'
+      needLogin: '先にログインとデバイス連携を行ってください。',
+      footerMarquee: '今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める // 今すぐ始める //',
+      footerCtaLine1: '解き放つ',
+      footerCtaMini1: 'さあ、',
+      footerCtaLine2: 'あなたの',
+      footerCtaMini2: '集中力。',
+      footerCopy: '© 2026 THE TOLL // SYSTEM ACTIVE // VER 1.0'
     }
   };
 
@@ -127,7 +154,18 @@
     compareBody: document.getElementById('compare-body'),
     trustRow: document.getElementById('trust-row'),
     status: document.getElementById('status-msg'),
-    backBtn: document.getElementById('back-btn')
+    backBtn: document.getElementById('back-btn'),
+    monthlyFeature2: document.getElementById('monthly-feature-2'),
+    monthlyFeature3: document.getElementById('monthly-feature-3'),
+    yearlyFeature3: document.getElementById('yearly-feature-3'),
+    footerMarquee: document.getElementById('footer-marquee'),
+    footerCtaLine1: document.getElementById('footer-cta-line-1'),
+    footerCtaMini1: document.getElementById('footer-cta-mini-1'),
+    footerCtaLine2: document.getElementById('footer-cta-line-2'),
+    footerCtaMini2: document.getElementById('footer-cta-mini-2'),
+    footerCopy: document.getElementById('footer-copy'),
+    langEnBtn: document.getElementById('lang-en-btn'),
+    langJaBtn: document.getElementById('lang-ja-btn'),
   };
 
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -207,7 +245,7 @@
 
     document.documentElement.lang = APP_LANG;
     document.title = t('title');
-    el.subtitle.textContent = t('subtitle');
+    el.subtitle.textContent = t('protocolBadge');
     el.headline.textContent = t('headline');
     el.subcopy.textContent = t('subcopy');
     el.trialNote.textContent = t('trialNote');
@@ -230,6 +268,9 @@
 
     el.yearlyCta.textContent = t('yearlyCta');
     el.monthlyCta.textContent = t('monthlyCta');
+    el.monthlyFeature2.textContent = t('monthlyFeature2');
+    el.monthlyFeature3.textContent = t('monthlyFeature3');
+    el.yearlyFeature3.textContent = t('yearlyFeature3');
 
     el.compareTitle.textContent = t('compareTitle');
     el.featureColTitle.textContent = t('featureCol');
@@ -239,6 +280,16 @@
     renderTrust();
 
     el.backBtn.textContent = t('back');
+
+    el.footerMarquee.textContent = t('footerMarquee');
+    el.footerCtaLine1.textContent = t('footerCtaLine1');
+    el.footerCtaMini1.textContent = t('footerCtaMini1');
+    el.footerCtaLine2.textContent = t('footerCtaLine2');
+    el.footerCtaMini2.textContent = t('footerCtaMini2');
+    el.footerCopy.textContent = t('footerCopy');
+
+    if (el.langEnBtn) el.langEnBtn.classList.toggle('active', APP_LANG === 'en');
+    if (el.langJaBtn) el.langJaBtn.classList.toggle('active', APP_LANG === 'ja');
   }
 
   function setStatus(msg) {
@@ -324,8 +375,18 @@
     window.location.href = `/${qs.toString() ? `?${qs.toString()}` : ''}`;
   }
 
+  function setLanguage(lang) {
+    if (lang !== 'ja' && lang !== 'en') return;
+    APP_LANG = lang;
+    params.set('lang', lang);
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+    applyTextAndPrice();
+  }
+
   applyTextAndPrice();
   el.monthlyBtn.addEventListener('click', () => startCheckout('monthly'));
   el.yearlyBtn.addEventListener('click', () => startCheckout('yearly'));
   el.backBtn.addEventListener('click', backToApp);
+  if (el.langEnBtn) el.langEnBtn.addEventListener('click', () => setLanguage('en'));
+  if (el.langJaBtn) el.langJaBtn.addEventListener('click', () => setLanguage('ja'));
 })();
