@@ -800,10 +800,63 @@ h1 {
   color: var(--pop-black);
 }
 
+/* Headline treatment for TARGET LOCK / ACCESS GRANTED */
+#session-title,
+#complete-title {
+  display: inline-block;
+  position: relative;
+  isolation: isolate;
+  padding: 10px 14px 12px;
+  border: 2px solid var(--pop-black);
+  background: var(--pop-white);
+  box-shadow: 5px 5px 0 var(--pop-black);
+  letter-spacing: 0.02em;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
+}
+
+#session-title::before,
+#complete-title::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  width: 64px;
+  height: 8px;
+  background: var(--pop-yellow);
+  border: 2px solid var(--pop-black);
+  box-shadow: 2px 2px 0 var(--pop-black);
+  z-index: -1;
+}
+
+#session-title::after,
+#complete-title::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 16px;
+  height: 16px;
+  background: var(--pop-pink);
+  border-left: 2px solid var(--pop-black);
+  border-top: 2px solid var(--pop-black);
+}
+
 /* Japanese readability tuning for Session title */
 html[lang='ja'] #session-title {
   font-family: 'Noto Sans JP', sans-serif;
-  font-size: clamp(2.6rem, 8vw, 3.8rem) !important;
+  font-size: clamp(2.2rem, 6.6vw, 3.2rem) !important;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: 0.02em;
+  -webkit-text-stroke: 0 !important;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.22);
+}
+
+/* Match complete screen title styling with session title in JA */
+html[lang='ja'] #complete-title {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-size: clamp(2.2rem, 6.6vw, 3.2rem) !important;
   font-weight: 700;
   line-height: 1.12;
   letter-spacing: 0.02em;
