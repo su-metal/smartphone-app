@@ -155,6 +155,11 @@
     );
   };
 
+  function parsePositiveInt(value, fallback) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  }
+
   // ============================================
   // 状態管理
   // ============================================
@@ -294,6 +299,29 @@
     if (elements.globalLangSwitch) {
       elements.globalLangSwitch.classList.toggle('hidden', screenId === 'squat-screen');
     }
+  }
+
+  function enterScreenshotCountMode({ count, target, sessionId }) {
+    state.sessionId = sessionId || 'DEMO-COUNT';
+    state.exerciseType = 'SQUAT';
+    state.targetCount = target;
+    state.squatCount = Math.max(0, count);
+    state.startTime = null;
+    state.isSquatting = false;
+    state.pendingTargetCount = null;
+
+    if (elements.currentSessionLabel) elements.currentSessionLabel.textContent = state.sessionId;
+    if (elements.squatCountLabel) elements.squatCountLabel.textContent = String(state.squatCount);
+    if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = String(state.targetCount);
+    if (elements.completeRepsDisplay) elements.completeRepsDisplay.textContent = String(state.targetCount);
+    if (elements.exerciseLabel) elements.exerciseLabel.textContent = t('exercise_squat');
+
+    if (elements.guide) elements.guide.classList.add('hidden');
+    setCountDisplayVisible(true);
+    updateStatus(t('status_ready'));
+
+    document.body.classList.add('screenshot-count-mode');
+    showScreen('squat-screen');
   }
   function normalizeDeviceId(raw) {
     const v = String(raw || '').trim();
@@ -1323,6 +1351,20 @@
     const checkout = urlParams.get('checkout');
     const portal = urlParams.get('portal');
     const deviceParam = normalizeDeviceId(urlParams.get('device'));
+    const screenshotMode = String(urlParams.get('screenshot') || '').trim().toLowerCase();
+    const isScreenshotCountMode = screenshotMode === 'count' || screenshotMode === '1' || screenshotMode === 'true';
+
+    if (isScreenshotCountMode) {
+      const screenshotTarget = parsePositiveInt(target, 20);
+      const screenshotCount = parsePositiveInt(urlParams.get('count'), Math.min(12, screenshotTarget));
+      const screenshotSessionId = (sid || 'DEMO-COUNT').trim().toUpperCase();
+      enterScreenshotCountMode({
+        count: Math.min(screenshotCount, screenshotTarget),
+        target: screenshotTarget,
+        sessionId: screenshotSessionId
+      });
+      return;
+    }
 
     const storedDeviceId = normalizeDeviceId(localStorage.getItem('the_toll_device_id'));
     if (deviceParam) {
