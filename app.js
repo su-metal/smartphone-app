@@ -80,8 +80,7 @@
       status_recalibrating: 'RE-CALIBRATING',
       voice_stand_back: 'Stand back. Show us your body.',
       voice_ready_start: 'Ready. Start!',
-      voice_stay_still: 'Please stay still.',
-      voice_situp_still: 'Sit up and stay still. Side view recommended.',
+      voice_stay_still: 'Face forward and hold where your shoulders are visible.',
       voice_mission_complete: 'Mission Complete!'
     },
     ja: {
@@ -144,8 +143,7 @@
       status_recalibrating: '再キャリブレーション中',
       voice_stand_back: '少し離れて全身を映してください。',
       voice_ready_start: '準備OK。スタート！',
-      voice_stay_still: 'そのまま動かないでください。',
-      voice_situp_still: '腹筋姿勢で止まってください。横向き推奨です。',
+      voice_stay_still: '正面を向いて、肩が見える位置で構えてください。',
       voice_mission_complete: 'ミッション完了！'
     }
   };
@@ -191,6 +189,7 @@
     _lastCalibSpeak: 0,
     _lastGuideSpeak: 0,
     _squatReadySpoken: false,
+    _pushupGuideSpoken: false,
     _pushupReadySpoken: false,
     _situpReadySpoken: false,
     _membershipCheckInFlight: false
@@ -679,6 +678,7 @@
     state.isSquatting = false;
     state.startTime = Date.now();
     state._squatReadySpoken = false;
+    state._pushupGuideSpoken = false;
     state._pushupReadySpoken = false;
     state._situpReadySpoken = false;
     elements.currentSessionLabel.textContent = sessionId;
@@ -989,6 +989,12 @@
     const thresholdDown = 95;
     const thresholdUp = 155;
 
+    if (!state._pushupGuideSpoken) {
+      speakText(t('voice_stay_still'));
+      state._pushupGuideSpoken = true;
+      return;
+    }
+
     if (!state._pushupReadySpoken) {
       playSoundCount();
       speakText(t('voice_ready_start'));
@@ -1208,6 +1214,7 @@
     state.pushupBaseline = null;
     state.situpBaseline = null;
     state._squatReadySpoken = false;
+    state._pushupGuideSpoken = false;
     state._pushupReadySpoken = false;
     state._situpReadySpoken = false;
 
@@ -1244,6 +1251,7 @@
     state.pushupBaseline = null;
     state.situpBaseline = null;
     state._squatReadySpoken = false;
+    state._pushupGuideSpoken = false;
     state._pushupReadySpoken = false;
     state._situpReadySpoken = false;
     
@@ -1367,6 +1375,7 @@
         state.situpBaseline = null;
         state.calibrationBuffer = [];
         state.isSquatting = false;
+        state._pushupGuideSpoken = false;
         state._pushupReadySpoken = false;
         state._situpReadySpoken = false;
         debugLog('Recalibration requested');
