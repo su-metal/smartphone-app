@@ -264,8 +264,12 @@
 
   function updateStatus(text) { elements.statusLabel.textContent = text; }
   function setCountDisplayVisible(visible) {
-    if (!elements.squatCounter) return;
-    elements.squatCounter.classList.toggle('hidden', !visible);
+    if (elements.squatCounter) {
+      elements.squatCounter.classList.toggle('hidden', !visible);
+    }
+    if (elements.exerciseLabel) {
+      elements.exerciseLabel.classList.toggle('hidden', !visible);
+    }
   }
   function setManageSubscriptionVisible(visible) {
     if (!elements.manageSubscriptionBtn) return;
