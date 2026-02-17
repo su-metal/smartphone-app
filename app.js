@@ -191,6 +191,8 @@
     _lastCalibSpeak: 0,
     _lastGuideSpeak: 0,
     _squatReadySpoken: false,
+    _pushupReadySpoken: false,
+    _situpReadySpoken: false,
     _membershipCheckInFlight: false
   };
  
@@ -674,7 +676,11 @@
 
     state.sessionId = sessionId;
     state.squatCount = 0;
+    state.isSquatting = false;
     state.startTime = Date.now();
+    state._squatReadySpoken = false;
+    state._pushupReadySpoken = false;
+    state._situpReadySpoken = false;
     elements.currentSessionLabel.textContent = sessionId;
     elements.squatCountLabel.textContent = '0';
 
@@ -967,116 +973,72 @@
   function handlePushupDetection(lm) {
     if (lm[11].visibility < 0.6 || lm[12].visibility < 0.6) {
       updateStatus(t('status_show_shoulders'));
-      state.calibrationBuffer = []; // 隠れたらバッファもリセット
       return;
     }
 
-    const shoulderY = (lm[11].y + lm[12].y) / 2;
-    
-    // 基準が設定されていない場合、安定するまで待つ (キャリブレーション)
-    if (state.pushupBaseline === null) {
-      updateStatus(t('status_calibrating'));
-      
-      // 音声ガイダンス (最初だけ)
-      if (!state._lastCalibSpeak || Date.now() - state._lastCalibSpeak > 5000) {
-        speakText(t('voice_stay_still'));
-        state._lastCalibSpeak = Date.now();
-      }
+    const leftElbow = getVisibleAngle(lm, 11, 13, 15);
+    const rightElbow = getVisibleAngle(lm, 12, 14, 16);
+    const elbowAngles = [leftElbow, rightElbow].filter(Number.isFinite);
 
-      state.calibrationBuffer.push(shoulderY);
-      
-      if (state.calibrationBuffer.length > 30) { // 30フレーム(約1秒)安定を待つ
-        const avg = state.calibrationBuffer.reduce((a, b) => a + b) / state.calibrationBuffer.length;
-        const variance = state.calibrationBuffer.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / state.calibrationBuffer.length;
-        
-        if (variance < 0.0001) { // ほとんど動いていない
-          state.pushupBaseline = avg;
-          state.calibrationBuffer = [];
-          debugLog(`Baseline SET: ${avg.toFixed(3)} (Stable)`);
-          playSoundCount();
-          speakText(t('voice_ready_start')); // 開始の合図
-        } else {
-          state.calibrationBuffer.shift(); // 安定しないので古いデータを捨てる
-        }
-      }
+    if (elbowAngles.length === 0) {
+      updateStatus(t('status_show_shoulders'));
       return;
     }
 
-    // 安定判定
-    const thresholdDown = 0.12; 
-    const thresholdUp = 0.05;
-    const diff = Math.abs(shoulderY - state.pushupBaseline);
-    
+    const elbowAngle = elbowAngles.reduce((sum, v) => sum + v, 0) / elbowAngles.length;
+    const thresholdDown = 95;
+    const thresholdUp = 155;
+
+    if (!state._pushupReadySpoken) {
+      playSoundCount();
+      speakText(t('voice_ready_start'));
+      state._pushupReadySpoken = true;
+    }
+
     if (!state._lastPushLog || Date.now() - state._lastPushLog > 1000) {
-      debugLog(`Diff: ${diff.toFixed(3)} (Base: ${state.pushupBaseline.toFixed(2)})`);
+      debugLog(`Pushup Elbow Angle: ${elbowAngle.toFixed(1)}`);
       state._lastPushLog = Date.now();
     }
 
-    if (!state.isSquatting && diff > thresholdDown) {
+    if (!state.isSquatting && elbowAngle <= thresholdDown) {
       state.isSquatting = true;
       playSoundSquatDown();
       updateStatus(t('status_down'));
-    } else if (state.isSquatting && diff < thresholdUp) {
+    } else if (state.isSquatting && elbowAngle >= thresholdUp) {
       countRep();
     }
   }
  
   function handleSitupDetection(lm) {
-    // 鼻か肩、見えている部位の平均Y座標を使う (より柔軟に)
-    const pts = [lm[0], lm[11], lm[12]].filter(p => p.visibility > 0.5);
-    if (pts.length === 0) {
-      updateStatus(t('status_show_upper_body'));
-      state.calibrationBuffer = [];
+    const leftHipAngle = getVisibleAngle(lm, 11, 23, 25);
+    const rightHipAngle = getVisibleAngle(lm, 12, 24, 26);
+    const hipAngles = [leftHipAngle, rightHipAngle].filter(Number.isFinite);
+
+    if (hipAngles.length === 0) {
+      updateStatus(t('status_show_full_body'));
       return;
     }
 
-    // 画面が縦向き（Portrait）なのにアプリが横向き（forced rotation）の場合、
-    // ユーザーの上下動はカメラのX軸になるため、判定軸を切り替える
-    const isPortrait = window.innerHeight > window.innerWidth;
-    const currentY = pts.reduce((sum, p) => sum + (isPortrait ? p.x : p.y), 0) / pts.length;
-    
-    // 基準が設定されていない場合、安定するまで待つ
-    if (state.situpBaseline === null) {
-      updateStatus(t('status_calibrating'));
+    const hipAngle = hipAngles.reduce((sum, v) => sum + v, 0) / hipAngles.length;
+    const thresholdUp = 110;
+    const thresholdDown = 145;
 
-      if (!state._lastCalibSpeak || Date.now() - state._lastCalibSpeak > 8000) {
-        speakText(t('voice_situp_still'));
-        state._lastCalibSpeak = Date.now();
-      }
-
-      state.calibrationBuffer.push(currentY);
-      
-      if (state.calibrationBuffer.length > 30) {
-        const avg = state.calibrationBuffer.reduce((a, b) => a + b) / state.calibrationBuffer.length;
-        const variance = state.calibrationBuffer.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / state.calibrationBuffer.length;
-        
-        if (variance < 0.0001) {
-          state.situpBaseline = avg;
-          state.calibrationBuffer = [];
-          debugLog(`Situp Baseline SET: ${avg.toFixed(3)}`);
-          playSoundCount();
-          speakText(t('voice_ready_start'));
-        } else {
-          state.calibrationBuffer.shift();
-        }
-      }
-      return;
+    if (!state._situpReadySpoken) {
+      playSoundCount();
+      speakText(t('voice_ready_start'));
+      state._situpReadySpoken = true;
     }
-
-    const thresholdDown = 0.18; // 動作を少し検出しやすく調整
-    const thresholdUp = 0.07;
-    const diff = Math.abs(currentY - state.situpBaseline);
 
     if (!state._lastPushLog || Date.now() - state._lastPushLog > 1000) {
-      debugLog(`Situp Diff: ${diff.toFixed(3)} (Base: ${state.situpBaseline.toFixed(2)})`);
+      debugLog(`Situp Hip Angle: ${hipAngle.toFixed(1)}`);
       state._lastPushLog = Date.now();
     }
 
-    if (!state.isSquatting && diff > thresholdDown) {
+    if (!state.isSquatting && hipAngle <= thresholdUp) {
       state.isSquatting = true;
       playSoundSquatDown();
       updateStatus(t('status_go_down'));
-    } else if (state.isSquatting && diff < thresholdUp) {
+    } else if (state.isSquatting && hipAngle >= thresholdDown) {
       countRep();
     }
   }
@@ -1128,6 +1090,15 @@
     const r = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
     let deg = Math.abs(r * 180 / Math.PI);
     return deg > 180 ? 360 - deg : deg;
+  }
+
+  function getVisibleAngle(lm, a, b, c, minVisibility = 0.5) {
+    const p1 = lm[a];
+    const p2 = lm[b];
+    const p3 = lm[c];
+    if (!p1 || !p2 || !p3) return null;
+    if (p1.visibility < minVisibility || p2.visibility < minVisibility || p3.visibility < minVisibility) return null;
+    return calculateAngle(p1, p2, p3);
   }
 
   function drawPose(ctx, lm, w, h) {
@@ -1237,6 +1208,8 @@
     state.pushupBaseline = null;
     state.situpBaseline = null;
     state._squatReadySpoken = false;
+    state._pushupReadySpoken = false;
+    state._situpReadySpoken = false;
 
     // UIリセット
     elements.sessionInput.value = '';
@@ -1271,6 +1244,8 @@
     state.pushupBaseline = null;
     state.situpBaseline = null;
     state._squatReadySpoken = false;
+    state._pushupReadySpoken = false;
+    state._situpReadySpoken = false;
     
     // フルスクリーン解除 (任意: ユーザー体験的に戻した方がいい場合が多い)
     if (document.fullscreenElement) {
@@ -1391,6 +1366,9 @@
         state.pushupBaseline = null;
         state.situpBaseline = null;
         state.calibrationBuffer = [];
+        state.isSquatting = false;
+        state._pushupReadySpoken = false;
+        state._situpReadySpoken = false;
         debugLog('Recalibration requested');
         updateStatus(t('status_recalibrating'));
       };
