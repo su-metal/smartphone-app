@@ -252,7 +252,8 @@
     recalibrateBtn: document.getElementById('recalibrate-btn'),
     hint: document.getElementById('squat-hint'),
     overlayUi: document.querySelector('.overlay-ui'),
-    fullscreenBtn: document.getElementById('fullscreen-btn')
+    fullscreenBtn: document.getElementById('fullscreen-btn'),
+    globalLangSwitch: document.querySelector('.global-lang-switch')
   };
 
   // ============================================
@@ -290,6 +291,9 @@
   function showScreen(screenId) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(screenId).classList.add('active');
+    if (elements.globalLangSwitch) {
+      elements.globalLangSwitch.classList.toggle('hidden', screenId === 'squat-screen');
+    }
   }
   function normalizeDeviceId(raw) {
     const v = String(raw || '').trim();
