@@ -1071,7 +1071,7 @@
     state.isSquatting = false;
     state.squatCount++;
     elements.squatCountLabel.textContent = state.squatCount;
-    speakText(state.squatCount.toString());
+    speakText(getCountSpeechText(state.squatCount));
     
     if (state.squatCount >= state.targetCount) {
       playSoundComplete();
@@ -1177,6 +1177,42 @@
   const playSoundCount = () => playTone(440 + (state.squatCount * 50), 0.15);
   const playSoundComplete = () => [523, 659, 783, 1046].forEach((f, i) => setTimeout(() => playTone(f, 0.3), i * 100));
   const playSoundSquatDown = () => playTone(600, 0.08);
+
+  function getCountSpeechText(count) {
+    const n = Number.parseInt(count, 10);
+    if (!Number.isFinite(n) || n <= 0) return String(count);
+
+    if (APP_LANG === 'ja') {
+      const d = ['', 'いち', 'に', 'さん', 'よん', 'ご', 'ろく', 'なな', 'はち', 'きゅう'];
+      if (n <= 9) return d[n];
+      if (n === 10) return 'じゅう';
+      if (n < 20) return `じゅう${d[n - 10]}`;
+      if (n < 100) {
+        const tens = Math.floor(n / 10);
+        const ones = n % 10;
+        const head = tens === 1 ? 'じゅう' : `${d[tens]}じゅう`;
+        return ones ? `${head}${d[ones]}` : head;
+      }
+      return String(n);
+    }
+
+    if (n <= 20) {
+      const en = [
+        '', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+        'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+        'seventeen', 'eighteen', 'nineteen', 'twenty'
+      ];
+      return en[n] || String(n);
+    }
+    if (n < 100) {
+      const tensWords = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+      const onesWords = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine'];
+      const tens = Math.floor(n / 10);
+      const ones = n % 10;
+      return ones ? `${tensWords[tens]} ${onesWords[ones]}` : tensWords[tens];
+    }
+    return String(n);
+  }
 
   function clearSession() {
     debugLog('Clearing session data...');
