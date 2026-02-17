@@ -235,6 +235,7 @@
     camera: document.getElementById('camera'),
     canvas: document.getElementById('pose-canvas'),
     squatCountLabel: document.getElementById('squat-count'),
+    squatCounter: document.querySelector('.squat-counter'),
     statusLabel: document.getElementById('status'),
     guide: document.getElementById('guide'),
     currentSessionLabel: document.getElementById('current-session'),
@@ -262,6 +263,10 @@
 
 
   function updateStatus(text) { elements.statusLabel.textContent = text; }
+  function setCountDisplayVisible(visible) {
+    if (!elements.squatCounter) return;
+    elements.squatCounter.classList.toggle('hidden', !visible);
+  }
   function setManageSubscriptionVisible(visible) {
     if (!elements.manageSubscriptionBtn) return;
     elements.manageSubscriptionBtn.classList.toggle('hidden', !visible);
@@ -703,6 +708,8 @@
     }
     
     showScreen('squat-screen');
+    elements.guide?.classList.remove('hidden');
+    setCountDisplayVisible(false);
     initMediaPipe().catch(err => debugLog('Camera error: ' + err.message));
   }
 
@@ -838,6 +845,7 @@
     if (!results.poseLandmarks) { 
       updateStatus(t('status_no_person')); 
       elements.guide.classList.remove('hidden'); 
+      setCountDisplayVisible(false);
       
       // 音声ガイダンス (10秒おき) - 低優先度
       if (Date.now() - state._lastGuideSpeak > 10000) {
@@ -885,6 +893,7 @@
     if (!isVisible) {
       updateStatus(visibilityMsg);
       elements.guide.classList.remove('hidden');
+      setCountDisplayVisible(false);
       
       // 音声ガイダンス (10秒おき) Visibilityが低い場合 - 低優先度
       if (Date.now() - state._lastGuideSpeak > 10000) {
@@ -896,6 +905,7 @@
     }
     
     elements.guide.classList.add('hidden');
+    setCountDisplayVisible(true);
     drawPose(ctx, lm, elements.canvas.width, elements.canvas.height);
   
     if (state.exerciseType === 'SQUAT') {
