@@ -155,10 +155,6 @@
     );
   };
 
-  function parsePositiveInt(value, fallback) {
-    const parsed = Number.parseInt(value, 10);
-    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-  }
 
   // ============================================
   // 状態管理
@@ -301,28 +297,6 @@
     }
   }
 
-  function enterScreenshotCountMode({ count, target, sessionId }) {
-    state.sessionId = sessionId || 'DEMO-COUNT';
-    state.exerciseType = 'SQUAT';
-    state.targetCount = target;
-    state.squatCount = Math.max(0, count);
-    state.startTime = null;
-    state.isSquatting = false;
-    state.pendingTargetCount = null;
-
-    if (elements.currentSessionLabel) elements.currentSessionLabel.textContent = state.sessionId;
-    if (elements.squatCountLabel) elements.squatCountLabel.textContent = String(state.squatCount);
-    if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = String(state.targetCount);
-    if (elements.completeRepsDisplay) elements.completeRepsDisplay.textContent = String(state.targetCount);
-    if (elements.exerciseLabel) elements.exerciseLabel.textContent = t('exercise_squat');
-
-    if (elements.guide) elements.guide.classList.add('hidden');
-    setCountDisplayVisible(true);
-    updateStatus(t('status_ready'));
-
-    document.body.classList.add('screenshot-count-mode');
-    showScreen('squat-screen');
-  }
   function normalizeDeviceId(raw) {
     const v = String(raw || '').trim();
     if (!v) return null;
@@ -337,20 +311,27 @@
     return Math.max(0, Math.min(EXERCISES.length - 1, idx));
   }
 
+  function hasExerciseOverrideAccess() {
+    const sub = String(state.subscriptionStatus || '').toLowerCase();
+    const tier = String(state.planTier || '').toLowerCase();
+    return sub === 'active' || tier === 'pro';
+  }
+
   function updateExerciseControls() {
     // 8文字以上で有効化 (以前の4文字から変更)
     const sessionReady = !!((elements.sessionInput?.value || '').trim().length >= 8);
     if (elements.startBtn) {
       elements.startBtn.disabled = !sessionReady;
     }
+    const canOverrideExercise = hasExerciseOverrideAccess();
     if (elements.nextExerciseDisplay) {
-      elements.nextExerciseDisplay.classList.toggle('hidden', !!state.isPro || !sessionReady);
+      elements.nextExerciseDisplay.classList.toggle('hidden', canOverrideExercise || !sessionReady);
     }
     if (elements.proExerciseSelector) {
-      elements.proExerciseSelector.classList.toggle('hidden', !(state.isPro && sessionReady));
+      elements.proExerciseSelector.classList.toggle('hidden', !(canOverrideExercise && sessionReady));
     }
     if (elements.exerciseSelect) {
-      elements.exerciseSelect.disabled = !state.isPro;
+      elements.exerciseSelect.disabled = !canOverrideExercise;
       elements.exerciseSelect.value = String(state.selectedExerciseIndex || 0);
     }
     if (elements.resetCycleBtn) {
@@ -387,7 +368,7 @@
       else elements.overlayUi.classList.remove('landscape-mode');
     }
 
-    state.targetCount = state.isPro ? selected.defaultCount : 10;
+    state.targetCount = hasExerciseOverrideAccess() ? selected.defaultCount : 10;
     if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = state.targetCount;
   }
   async function syncDeviceLink() {
@@ -733,7 +714,7 @@
       state.targetCount = effectiveTarget;
       state.sessionTargetById[sessionId] = effectiveTarget;
       debugLog('Target from QR/URL: ' + state.targetCount);
-    } else if (!state.isPro) {
+    } else if (!hasExerciseOverrideAccess()) {
       state.exerciseType = 'SQUAT';
       state.targetCount = 10;
     }
@@ -1099,7 +1080,7 @@
  
   function cycleExercise() {
     // Free only: cycle helper keeps simple "next" behavior.
-    if (state.isPro) return;
+    if (hasExerciseOverrideAccess()) return;
     const nextIdx = (state.cycleIndex + 1) % EXERCISES.length;
     localStorage.setItem(STORAGE_SELECTED_EXERCISE, String(nextIdx));
     loadNextExercise();
@@ -1108,7 +1089,7 @@
   function loadNextExercise() {
     try {
       let idx = getStoredExerciseIndex();
-      if (!state.isPro) {
+      if (!hasExerciseOverrideAccess()) {
         idx = 0; // Free is always SQUAT.
       }
       applyExerciseIndex(idx);
@@ -1329,7 +1310,7 @@
     };
     if (elements.exerciseSelect) {
       elements.exerciseSelect.onchange = (e) => {
-        if (!state.isPro) return;
+        if (!hasExerciseOverrideAccess()) return;
         const idx = parseInt(e.target.value, 10);
         if (!Number.isInteger(idx)) return;
         localStorage.setItem(STORAGE_SELECTED_EXERCISE, String(idx));
@@ -1351,21 +1332,6 @@
     const checkout = urlParams.get('checkout');
     const portal = urlParams.get('portal');
     const deviceParam = normalizeDeviceId(urlParams.get('device'));
-    const screenshotMode = String(urlParams.get('screenshot') || '').trim().toLowerCase();
-    const isScreenshotCountMode = screenshotMode === 'count' || screenshotMode === '1' || screenshotMode === 'true';
-
-    if (isScreenshotCountMode) {
-      const screenshotTarget = parsePositiveInt(target, 20);
-      const screenshotCount = parsePositiveInt(urlParams.get('count'), Math.min(12, screenshotTarget));
-      const screenshotSessionId = (sid || 'DEMO-COUNT').trim().toUpperCase();
-      enterScreenshotCountMode({
-        count: Math.min(screenshotCount, screenshotTarget),
-        target: screenshotTarget,
-        sessionId: screenshotSessionId
-      });
-      return;
-    }
-
     const storedDeviceId = normalizeDeviceId(localStorage.getItem('the_toll_device_id'));
     if (deviceParam) {
       state.linkedDeviceId = deviceParam;
