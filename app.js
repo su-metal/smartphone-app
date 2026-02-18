@@ -311,20 +311,27 @@
     return Math.max(0, Math.min(EXERCISES.length - 1, idx));
   }
 
+  function hasExerciseOverrideAccess() {
+    const sub = String(state.subscriptionStatus || '').toLowerCase();
+    const tier = String(state.planTier || '').toLowerCase();
+    return sub === 'active' || tier === 'pro';
+  }
+
   function updateExerciseControls() {
     // 8文字以上で有効化 (以前の4文字から変更)
     const sessionReady = !!((elements.sessionInput?.value || '').trim().length >= 8);
     if (elements.startBtn) {
       elements.startBtn.disabled = !sessionReady;
     }
+    const canOverrideExercise = hasExerciseOverrideAccess();
     if (elements.nextExerciseDisplay) {
-      elements.nextExerciseDisplay.classList.toggle('hidden', !!state.isPro || !sessionReady);
+      elements.nextExerciseDisplay.classList.toggle('hidden', canOverrideExercise || !sessionReady);
     }
     if (elements.proExerciseSelector) {
-      elements.proExerciseSelector.classList.toggle('hidden', !(state.isPro && sessionReady));
+      elements.proExerciseSelector.classList.toggle('hidden', !(canOverrideExercise && sessionReady));
     }
     if (elements.exerciseSelect) {
-      elements.exerciseSelect.disabled = !state.isPro;
+      elements.exerciseSelect.disabled = !canOverrideExercise;
       elements.exerciseSelect.value = String(state.selectedExerciseIndex || 0);
     }
     if (elements.resetCycleBtn) {
@@ -361,7 +368,7 @@
       else elements.overlayUi.classList.remove('landscape-mode');
     }
 
-    state.targetCount = state.isPro ? selected.defaultCount : 10;
+    state.targetCount = hasExerciseOverrideAccess() ? selected.defaultCount : 10;
     if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = state.targetCount;
   }
   async function syncDeviceLink() {
@@ -707,7 +714,7 @@
       state.targetCount = effectiveTarget;
       state.sessionTargetById[sessionId] = effectiveTarget;
       debugLog('Target from QR/URL: ' + state.targetCount);
-    } else if (!state.isPro) {
+    } else if (!hasExerciseOverrideAccess()) {
       state.exerciseType = 'SQUAT';
       state.targetCount = 10;
     }
@@ -1073,7 +1080,7 @@
  
   function cycleExercise() {
     // Free only: cycle helper keeps simple "next" behavior.
-    if (state.isPro) return;
+    if (hasExerciseOverrideAccess()) return;
     const nextIdx = (state.cycleIndex + 1) % EXERCISES.length;
     localStorage.setItem(STORAGE_SELECTED_EXERCISE, String(nextIdx));
     loadNextExercise();
@@ -1082,7 +1089,7 @@
   function loadNextExercise() {
     try {
       let idx = getStoredExerciseIndex();
-      if (!state.isPro) {
+      if (!hasExerciseOverrideAccess()) {
         idx = 0; // Free is always SQUAT.
       }
       applyExerciseIndex(idx);
@@ -1303,7 +1310,7 @@
     };
     if (elements.exerciseSelect) {
       elements.exerciseSelect.onchange = (e) => {
-        if (!state.isPro) return;
+        if (!hasExerciseOverrideAccess()) return;
         const idx = parseInt(e.target.value, 10);
         if (!Number.isInteger(idx)) return;
         localStorage.setItem(STORAGE_SELECTED_EXERCISE, String(idx));

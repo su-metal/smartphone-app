@@ -150,19 +150,25 @@
         <div id="qr-reader" style="width:100%;"></div>
         <button id="close-scan-btn" class="scs-btn-plan" style="width:auto; margin-top:20px; background:white; color:black;">CANCEL SCAN</button>
       </div>
+
+      <!-- QR Scanner Overlay -->
+      <div id="qr-reader-container" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:black; z-index:999; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div id="qr-reader" style="width:100%;"></div>
+        <button id="close-scan-btn" class="scs-btn-plan" style="width:auto; margin-top:20px; background:white; color:black;">CANCEL SCAN</button>
+      </div>
     </div>
 
     <!-- SQUAT SCREEN (HUD) -->
     <div id="squat-screen" class="screen">
       <div class="camera-container" style="position:relative; width:100%; height:100vh; overflow:hidden; background:black;">
         <video id="camera" autoplay muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>
+        <img id="squat-guide-bg" src="squat_woman_jp.png" alt="Squat Guide" class="squat-bg-image">
         <canvas id="pose-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%;"></canvas>
         
         <!-- Brutalist HUD Overlay -->
         <div class="overlay-ui scs-hud-overlay">
           <div class="scs-hud-top">
             <div class="scs-hud-val" style="font-size:1.2rem;"><span id="hud-session-label">SESSION:</span> <span id="current-session">-</span></div>
-            <div class="hud-top-right" style="display:flex; align-items:center; gap:10px;">
               <button id="fullscreen-btn" style="background:none; border:none; color:white; font-family:'Oswald'; font-size:1rem;">[FULL]</button>
               <div class="hud-status scs-hud-val" id="status" style="background:var(--pop-black); padding:2px 5px;">READY</div>
             </div>

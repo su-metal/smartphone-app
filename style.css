@@ -1366,3 +1366,28 @@ select.scs-input-field option {
   box-shadow: 4px 4px 0px black !important;
 }
 
+/* Squat Background Image */
+.squat-bg-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1; /* Above video container bg, but behind HUD */
+  opacity: 1.0;
+  pointer-events: none;
+}
+
+/* Ensure layering correct in camera container */
+#camera {
+  z-index: 0;
+}
+
+#pose-canvas {
+  z-index: 2; /* Above bg image */
+}
+
+.scs-hud-overlay {
+  z-index: 200; /* Above everything */
+}
