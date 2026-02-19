@@ -373,20 +373,13 @@
   }
 
   function backToApp() {
-    if (source === 'extension') {
-      window.close();
-      setTimeout(() => {
-        if (!document.hidden) {
-          // Fallback when close is blocked: replace without adding history.
-          window.location.replace('about:blank');
-        }
-      }, 200);
-      return;
-    }
-    const qs = new URLSearchParams();
-    qs.set('lang', APP_LANG);
-    if (deviceId) qs.set('device', deviceId);
-    window.location.href = `/${qs.toString() ? `?${qs.toString()}` : ''}`;
+    window.close();
+    setTimeout(() => {
+      if (!document.hidden) {
+        // Fallback when close is blocked: stay with no history navigation.
+        window.location.replace('about:blank');
+      }
+    }, 200);
   }
 
   function setLanguage(lang) {
