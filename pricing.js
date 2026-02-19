@@ -71,6 +71,7 @@
       checkoutCancel: 'Payment was canceled.',
       portalReturn: 'Returned from subscription portal.',
       needLogin: 'Please log in and link your account first.',
+      closeWindowHint: 'Please close this window from the window close button.',
       footerMarquee: 'START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY // START WHEN READY //',
       footerCtaLine1: 'UNLEASH',
       footerCtaMini1: 'Unlock it,',
@@ -122,6 +123,7 @@
       checkoutCancel: '決済はキャンセルされました。',
       portalReturn: 'サブスクリプション管理画面から戻りました。',
       needLogin: '先にログインとデバイス連携を行ってください。',
+      closeWindowHint: 'このウィンドウを閉じるボタンで閉じてください。',
       footerMarquee: '準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める // 準備できたら始める //',
       footerCtaLine1: '解き放つ',
       footerCtaMini1: 'さあ、',
@@ -373,13 +375,27 @@
   }
 
   function backToApp() {
-    window.close();
+    const tryClose = () => {
+      window.close();
+      try {
+        window.open('', '_self');
+      } catch (_) {
+        // no-op
+      }
+      window.close();
+    };
+
+    tryClose();
     setTimeout(() => {
       if (!document.hidden) {
-        // Fallback when close is blocked: stay with no history navigation.
-        window.location.replace('about:blank');
+        tryClose();
       }
-    }, 200);
+    }, 180);
+    setTimeout(() => {
+      if (!document.hidden) {
+        setStatus(t('closeWindowHint'));
+      }
+    }, 420);
   }
 
   function setLanguage(lang) {
