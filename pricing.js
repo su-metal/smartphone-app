@@ -63,7 +63,7 @@
         'Designed for remote workers who need structure.',
         'No hidden fees. Manage subscription anytime.'
       ],
-      back: 'Back',
+      back: 'CLOSE WINDOW',
       opening: 'Opening Stripe checkout...',
       preparing: 'Preparing checkout...',
       failed: 'Failed to prepare checkout.',
@@ -115,7 +115,7 @@
         '在宅ワーカー向けに、続けやすさを重視して設計。',
         '隠れた手数料なし。いつでもサブスク管理可能。'
       ],
-      back: '戻る',
+      back: 'ウィンドウを閉じる',
       opening: 'Stripe決済画面を開いています...',
       preparing: '決済を準備しています...',
       failed: '決済の準備に失敗しました。',
