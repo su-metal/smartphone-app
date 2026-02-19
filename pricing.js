@@ -135,7 +135,7 @@
 
   const PRICE_BOOK = {
     usd: { monthly: 4.99, yearly: 49, currency: 'USD' },
-    jpy: { monthly: 500, yearly: 4980, currency: 'JPY' }
+    jpy: { monthly: 490, yearly: 4980, currency: 'JPY' }
   };
 
   const el = {
