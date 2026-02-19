@@ -63,7 +63,7 @@
         'Designed for remote workers who need structure.',
         'No hidden fees. Manage subscription anytime.'
       ],
-      back: 'CLOSE WINDOW',
+      back: 'Back',
       opening: 'Opening Stripe checkout...',
       preparing: 'Preparing checkout...',
       failed: 'Failed to prepare checkout.',
@@ -115,7 +115,7 @@
         '在宅ワーカー向けに、続けやすさを重視して設計。',
         '隠れた手数料なし。いつでもサブスク管理可能。'
       ],
-      back: 'ウィンドウを閉じる',
+      back: '戻る',
       opening: 'Stripe決済画面を開いています...',
       preparing: '決済を準備しています...',
       failed: '決済の準備に失敗しました。',
@@ -375,27 +375,12 @@
   }
 
   function backToApp() {
-    const tryClose = () => {
-      window.close();
-      try {
-        window.open('', '_self');
-      } catch (_) {
-        // no-op
-      }
-      window.close();
-    };
-
-    tryClose();
+    window.close();
     setTimeout(() => {
       if (!document.hidden) {
-        tryClose();
+        window.history.back();
       }
-    }, 180);
-    setTimeout(() => {
-      if (!document.hidden) {
-        setStatus(t('closeWindowHint'));
-      }
-    }, 420);
+    }, 200);
   }
 
   function setLanguage(lang) {
