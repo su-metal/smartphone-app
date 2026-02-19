@@ -377,7 +377,8 @@
       window.close();
       setTimeout(() => {
         if (!document.hidden) {
-          window.history.back();
+          // Fallback when close is blocked: replace without adding history.
+          window.location.replace('about:blank');
         }
       }, 200);
       return;
