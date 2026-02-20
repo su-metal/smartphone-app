@@ -53,7 +53,7 @@
       freeCol: 'Free',
       proCol: 'Pro',
       compareRows: [
-        { feature: 'Blocked sites', free: 'Up to 5', pro: 'Unlimited' },
+        { feature: 'Blocked sites', free: 'Up to 5', pro: 'Up to 50' },
         { feature: 'Grace period', free: '20 min fixed', pro: 'Custom' },
         { feature: 'Exercise mode', free: 'Squat only', pro: 'Choose exercise' },
         { feature: 'Schedule', free: 'Simple templates', pro: 'Advanced control' },
@@ -105,7 +105,7 @@
       freeCol: 'FREE',
       proCol: 'PRO',
       compareRows: [
-        { feature: 'ブロックサイト数', free: '最大5件', pro: '無制限' },
+        { feature: 'ブロックサイト数', free: '最大5件', pro: '最大50件' },
         { feature: '解放時間', free: '20分固定', pro: '自由設定' },
         { feature: '運動モード', free: 'スクワット固定', pro: '種目選択可' },
         { feature: 'スケジュール', free: '簡易テンプレ', pro: '詳細設定' },
