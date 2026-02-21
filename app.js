@@ -172,6 +172,7 @@
     squatCount: 0,
     targetCount: 20, // デフォルト
     pendingTargetCount: null,
+    pendingDurationMin: null,
     exerciseType: 'SQUAT', // SQUAT, PUSHUP, SITUP
     cycleIndex: 0,
     selectedExerciseIndex: 0,
@@ -197,9 +198,9 @@
   };
  
   const EXERCISES = [
-    { type: 'SQUAT', labelKey: 'exercise_squat', defaultCount: 20 },
-    { type: 'PUSHUP', labelKey: 'exercise_pushup', defaultCount: 20 },
-    { type: 'SITUP', labelKey: 'exercise_situp', defaultCount: 20 }
+    { type: 'SQUAT', labelKey: 'exercise_squat', defaultCount: 20, repsPerMin: 2.0 },
+    { type: 'PUSHUP', labelKey: 'exercise_pushup', defaultCount: 12, repsPerMin: 1.2 },
+    { type: 'SITUP', labelKey: 'exercise_situp', defaultCount: 15, repsPerMin: 1.5 }
   ];
   const STORAGE_SELECTED_EXERCISE = 'the_toll_selected_exercise';
 
@@ -317,6 +318,27 @@
     return sub === 'active' || tier === 'pro';
   }
 
+  function normalizeDurationMin(raw) {
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    return Math.max(1, Math.round(n));
+  }
+
+  function getCurrentDurationMin() {
+    return normalizeDurationMin(state.pendingDurationMin);
+  }
+
+  function getExerciseByType(type) {
+    return EXERCISES.find((x) => x.type === type) || EXERCISES[0];
+  }
+
+  function computeTargetByExerciseAndDuration(exerciseType, durationMin) {
+    const ex = getExerciseByType(exerciseType);
+    const normalizedDuration = normalizeDurationMin(durationMin);
+    if (!ex || !normalizedDuration) return null;
+    return Math.max(1, Math.ceil(normalizedDuration * Number(ex.repsPerMin || 1)));
+  }
+
   function updateExerciseControls() {
     // 8文字以上で有効化 (以前の4文字から変更)
     const sessionReady = !!((elements.sessionInput?.value || '').trim().length >= 8);
@@ -368,7 +390,10 @@
       else elements.overlayUi.classList.remove('landscape-mode');
     }
 
-    state.targetCount = hasExerciseOverrideAccess() ? selected.defaultCount : 10;
+    const durationMin = getCurrentDurationMin();
+    const computed = computeTargetByExerciseAndDuration(selected.type, durationMin);
+    if (computed) state.targetCount = computed;
+    else state.targetCount = hasExerciseOverrideAccess() ? selected.defaultCount : 10;
     if (elements.targetCountDisplay) elements.targetCountDisplay.textContent = state.targetCount;
   }
   async function syncDeviceLink() {
@@ -648,7 +673,7 @@
   // ============================================
   // セッション・QR
   // ============================================
-  async function startSession(sid, targetFromUrl) {
+  async function startSession(sid, targetFromUrl, durationFromUrl) {
     const sessionId = (sid || elements.sessionInput.value).trim().toUpperCase();
     if (!sessionId || sessionId.length < 4) return alert(t('enter_session_id'));
     
@@ -704,12 +729,22 @@
     const cachedTarget = state.sessionTargetById[sessionId];
     const effectiveTargetRaw = targetFromUrl || state.pendingTargetCount || cachedTarget;
     const effectiveTarget = parseInt(effectiveTargetRaw, 10);
+    const effectiveDurationRaw = durationFromUrl || state.pendingDurationMin;
+    const effectiveDurationMin = normalizeDurationMin(effectiveDurationRaw);
 
     // Settings Guard用の特別ID判定
     if (sessionId.startsWith('SET-') || sessionId.startsWith('CFG-')) {
       state.targetCount = 15;
       state.sessionTargetById[sessionId] = 15;
       debugLog('SETTINGS LOCK MISSION: 15 REPS');
+    } else if (effectiveDurationMin) {
+      state.pendingDurationMin = effectiveDurationMin;
+      const computedByDuration = computeTargetByExerciseAndDuration(state.exerciseType, effectiveDurationMin);
+      if (computedByDuration) {
+        state.targetCount = computedByDuration;
+        state.sessionTargetById[sessionId] = computedByDuration;
+        debugLog(`Target from duration (${effectiveDurationMin}m): ${state.targetCount}`);
+      }
     } else if (!isNaN(effectiveTarget) && effectiveTarget > 0) {
       state.targetCount = effectiveTarget;
       state.sessionTargetById[sessionId] = effectiveTarget;
@@ -746,6 +781,7 @@
         async (decodedText) => {
           let sid = decodedText;
           let target = null;
+          let duration = null;
           let device = null;
           
           // URLからsessionとtargetを抽出
@@ -756,11 +792,13 @@
               const sidFromUrl = url.searchParams.get('session');
               sid = sidFromUrl || sid;
               target = url.searchParams.get('target');
+              duration = url.searchParams.get('duration');
               device = normalizeDeviceId(url.searchParams.get('device'));
               if (!sidFromUrl && decodedText.includes('session=')) {
                 const fallback = new URLSearchParams(decodedText.split('?')[1] || '');
                 sid = fallback.get('session') || sid;
                 target = target || fallback.get('target');
+                duration = duration || fallback.get('duration');
                 device = device || normalizeDeviceId(fallback.get('device'));
               }
             } catch (e) {
@@ -772,9 +810,11 @@
              const params = new URLSearchParams(parts[1] || parts[0]);
              sid = params.get('session') || sid;
              target = params.get('target');
+             duration = params.get('duration');
              device = normalizeDeviceId(params.get('device'));
           }
           state.pendingTargetCount = target;
+          state.pendingDurationMin = normalizeDurationMin(duration);
           
           if (device) {
             state.linkedDeviceId = device;
@@ -1329,6 +1369,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const sid = urlParams.get('session');
     const target = urlParams.get('target');
+    const duration = urlParams.get('duration');
     const checkout = urlParams.get('checkout');
     const portal = urlParams.get('portal');
     const deviceParam = normalizeDeviceId(urlParams.get('device'));
@@ -1357,6 +1398,12 @@
         state.pendingTargetCount = parsed;
         state.targetCount = parsed;
         debugLog('Target count from URL: ' + state.targetCount);
+      }
+    }
+    if (duration) {
+      const parsedDuration = normalizeDurationMin(duration);
+      if (parsedDuration) {
+        state.pendingDurationMin = parsedDuration;
       }
     }
 
