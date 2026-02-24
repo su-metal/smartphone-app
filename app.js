@@ -821,8 +821,12 @@
           if (device) {
             state.linkedDeviceId = device;
             localStorage.setItem('the_toll_device_id', device);
-            await refreshPlanByDevice();
+          } else {
+            // If QR has no device context, do not reuse a previous device's entitlement.
+            state.linkedDeviceId = null;
+            localStorage.removeItem('the_toll_device_id');
           }
+          await refreshPlanByDevice();
           elements.sessionInput.value = sid;
           stopQRScan();
           loadNextExercise();
@@ -1375,12 +1379,9 @@
     const checkout = urlParams.get('checkout');
     const portal = urlParams.get('portal');
     const deviceParam = normalizeDeviceId(urlParams.get('device'));
-    const storedDeviceId = normalizeDeviceId(localStorage.getItem('the_toll_device_id'));
     if (deviceParam) {
       state.linkedDeviceId = deviceParam;
       localStorage.setItem('the_toll_device_id', deviceParam);
-    } else if (storedDeviceId) {
-      state.linkedDeviceId = storedDeviceId;
     }
     await refreshPlanByDevice();
 
