@@ -313,7 +313,9 @@
   }
 
   function hasExerciseOverrideAccess() {
-    return !!state.isPro;
+    // Exercise override is a paid-only feature (FREE/trial stays squat-only).
+    const sub = String(state.subscriptionStatus || '').toLowerCase();
+    return sub === 'active';
   }
 
   function normalizeDurationMin(raw) {
