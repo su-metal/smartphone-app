@@ -399,18 +399,11 @@
   async function syncDeviceLink() {
     if (!state.user || !state.linkedDeviceId) return;
     try {
-      const normalizedSub = String(state.subscriptionStatus || '').toLowerCase();
-      const statusForDevice = normalizedSub === 'active' ? 'active' : 'inactive';
-      // Keep plan tier as the actual paid tier; trial entitlement is represented by trial_ends_at.
-      const tierForDevice = statusForDevice === 'active' ? 'pro' : 'free';
       await state.supabase
         .from('device_links')
         .upsert({
           device_id: state.linkedDeviceId,
           user_id: state.user.id,
-          subscription_status: statusForDevice,
-          plan_tier: tierForDevice,
-          trial_ends_at: state.trialEndsAt,
           updated_at: new Date().toISOString(),
           last_seen_at: new Date().toISOString()
         }, { onConflict: 'device_id' });
