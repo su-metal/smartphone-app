@@ -1106,8 +1106,9 @@
       // 頭は不要。体育座りに近い姿勢:
       // - 上体が起きている（肩-腰の縦成分が大きい）
       // - 膝が立っている（股関節角度が曲がっている）
-      const hasBentKnee = Number.isFinite(hipAngle) && hipAngle >= 35 && hipAngle <= 130;
-      const torsoIsUpright = (liftRatio >= 0.48) || (torsoTilt >= 50);
+      // 膝角度は見えれば使う。見えないフレームでは上体姿勢だけでセットアップを進める。
+      const hasBentKnee = !Number.isFinite(hipAngle) || (hipAngle >= 20 && hipAngle <= 165);
+      const torsoIsUpright = (liftRatio >= 0.34) || (torsoTilt >= 38);
       const isCalibrationPose = hasBentKnee && torsoIsUpright && torsoTilt <= 89;
       if (!isCalibrationPose) {
         state.calibrationBuffer = [];
@@ -1121,7 +1122,7 @@
       if (state.calibrationBuffer.length > 15) state.calibrationBuffer.shift();
       updateStatus(t('status_calibrating'));
 
-      if (state.calibrationBuffer.length < 8) return;
+      if (state.calibrationBuffer.length < 5) return;
 
       const liftValues = state.calibrationBuffer.map(s => s.shoulderLift);
       const tiltValues = state.calibrationBuffer.map(s => s.torsoTilt);
@@ -1129,16 +1130,16 @@
       const hipValues = state.calibrationBuffer.map(s => s.hipAngle).filter(Number.isFinite);
       const liftSpan = Math.max(...liftValues) - Math.min(...liftValues);
       const tiltSpan = Math.max(...tiltValues) - Math.min(...tiltValues);
-      const ratioSpan = ratioValues.length ? (Math.max(...ratioValues) - Math.min(...ratioValues)) : 999;
-      const hipSpan = hipValues.length ? (Math.max(...hipValues) - Math.min(...hipValues)) : 999;
+      const ratioSpan = ratioValues.length ? (Math.max(...ratioValues) - Math.min(...ratioValues)) : 0;
+      const hipSpan = hipValues.length >= 3 ? (Math.max(...hipValues) - Math.min(...hipValues)) : 0;
 
-      if (liftSpan > 0.14 || tiltSpan > 24 || ratioSpan > 0.25 || hipSpan > 28) return;
+      if (liftSpan > 0.22 || tiltSpan > 34 || ratioSpan > 0.40 || hipSpan > 55) return;
 
       state.situpBaseline = {
         shoulderLift: liftValues.reduce((a, b) => a + b, 0) / liftValues.length,
         torsoTilt: tiltValues.reduce((a, b) => a + b, 0) / tiltValues.length,
         liftRatio: ratioValues.reduce((a, b) => a + b, 0) / ratioValues.length,
-        hipAngle: hipValues.reduce((a, b) => a + b, 0) / hipValues.length,
+        hipAngle: hipValues.length ? (hipValues.reduce((a, b) => a + b, 0) / hipValues.length) : null,
         side
       };
       state.calibrationBuffer = [];
@@ -1146,7 +1147,7 @@
       state._situpUpStartTs = 0;
       debugLog(
         `Situp baseline set (${side}) lift=${state.situpBaseline.shoulderLift.toFixed(3)}, ` +
-        `ratio=${state.situpBaseline.liftRatio.toFixed(2)} hip=${state.situpBaseline.hipAngle.toFixed(1)} ` +
+        `ratio=${state.situpBaseline.liftRatio.toFixed(2)} hip=${Number.isFinite(state.situpBaseline.hipAngle) ? state.situpBaseline.hipAngle.toFixed(1) : 'na'} ` +
         `tilt=${state.situpBaseline.torsoTilt.toFixed(1)}`
       );
       return;
@@ -1303,8 +1304,8 @@
       const torsoLen = Math.hypot(dx, dy);
       if (!Number.isFinite(torsoLen) || torsoLen < 0.03) continue;
       const liftRatio = shoulderLift / Math.max(torsoLen, 0.0001);
-      const hipAngle = (knee && visKnee >= 0.35)
-        ? getVisibleAngle(lm, side.shoulder, side.hip, side.knee, 0.35)
+      const hipAngle = (knee && visKnee >= 0.2)
+        ? getVisibleAngle(lm, side.shoulder, side.hip, side.knee, 0.2)
         : null;
       const score =
         (minVis * 2) +
