@@ -313,9 +313,7 @@
   }
 
   function hasExerciseOverrideAccess() {
-    const sub = String(state.subscriptionStatus || '').toLowerCase();
-    const tier = String(state.planTier || '').toLowerCase();
-    return sub === 'active' || tier === 'pro';
+    return !!state.isPro;
   }
 
   function normalizeDurationMin(raw) {
@@ -399,8 +397,10 @@
   async function syncDeviceLink() {
     if (!state.user || !state.linkedDeviceId) return;
     try {
-      const statusForDevice = state.isPro ? 'active' : 'inactive';
-      const tierForDevice = state.isPro ? 'pro' : 'free';
+      const normalizedSub = String(state.subscriptionStatus || '').toLowerCase();
+      const statusForDevice = normalizedSub === 'active' ? 'active' : 'inactive';
+      // Keep plan tier as the actual paid tier; trial entitlement is represented by trial_ends_at.
+      const tierForDevice = statusForDevice === 'active' ? 'pro' : 'free';
       await state.supabase
         .from('device_links')
         .upsert({
@@ -449,8 +449,8 @@
       state.planTier = tier;
       state.trialEndsAt = row?.trial_ends_at || null;
       state.trialDaysLeft = trialActive ? Math.max(1, Math.ceil((trialEnds - Date.now()) / (24 * 60 * 60 * 1000))) : 0;
-      // Device-based flow: treat either active status OR pro tier OR active trial as Pro.
-      state.isPro = sub === 'active' || tier === 'pro' || trialActive;
+      // Device-based flow entitlement: active subscription OR active trial.
+      state.isPro = sub === 'active' || trialActive;
     } catch (e) {
       debugLog('Device plan fetch failed: ' + (e?.message || e));
       state.subscriptionStatus = 'inactive';
