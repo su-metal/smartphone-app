@@ -962,11 +962,13 @@
       requiredLandmarks = [11, 12, 23, 24]; // 肩と腰
       visibilityMsg = t('status_show_torso');
     } else if (state.exerciseType === 'SITUP') {
-      requiredLandmarks = [0, 11, 12]; // 頭と肩
-      visibilityMsg = t('status_show_upper_body');
+      // 腹筋は頭不要。横向きで片側の肩+腰が見えていれば判定可能。
+      visibilityMsg = t('status_show_torso');
     }
-    
-    const isVisible = requiredLandmarks.every(idx => lm[idx] && lm[idx].visibility > 0.5);
+
+    const isVisible = state.exerciseType === 'SITUP'
+      ? !!getBestSitupMetrics(lm, state._situpPreferredSide)
+      : requiredLandmarks.every(idx => lm[idx] && lm[idx].visibility > 0.5);
     
     // ガイドオーバーレイのテキストを更新
     if (elements.guide) {
@@ -1091,7 +1093,7 @@
   function handleSitupDetection(lm) {
     const metrics = getBestSitupMetrics(lm, state._situpPreferredSide);
     if (!metrics) {
-      updateStatus(t('status_show_full_body'));
+      updateStatus(t('status_show_torso'));
       return;
     }
 
@@ -1099,10 +1101,10 @@
     const { shoulderLift, torsoTilt, side } = metrics;
     state._situpPreferredSide = side;
 
-    // 腹筋は「横になった姿勢（胴体が比較的平行）」の基準を取ってから判定
+    // 腹筋は「体育座りのような上体が起きた姿勢」を基準に取る
     if (!state.situpBaseline) {
-      // 胴体がある程度水平に近いときだけキャリブレーションを進める
-      const isCalibrationPose = torsoTilt <= 78;
+      // 頭は不要。肩-腰ラインがある程度立っていればセットアップOK。
+      const isCalibrationPose = torsoTilt >= 45 && torsoTilt <= 89;
       if (!isCalibrationPose) {
         state.calibrationBuffer = [];
         state.isSquatting = false;
@@ -1141,10 +1143,11 @@
 
     const baseline = state.situpBaseline;
     // 仕様: 胴体が平行に近づいたら「ピコッ」(ready)、起き上がったらカウント
-    const thresholdParallelTilt = Math.min(55, Math.max(14, baseline.torsoTilt + 12));
-    const thresholdUprightTilt = Math.min(88, Math.max(thresholdParallelTilt + 18, baseline.torsoTilt + 30));
+    // baseline は体育座り寄り（上体が起きた状態）なので、平行側の閾値は baseline より低くする。
+    const thresholdParallelTilt = Math.max(14, Math.min(58, baseline.torsoTilt - 22));
+    const thresholdUprightTilt = Math.max(thresholdParallelTilt + 14, Math.min(88, baseline.torsoTilt - 4));
     // 起き上がり判定に軽い高さ条件を加える（腕位置ではなく肩-腰の相対位置）
-    const thresholdUprightLift = baseline.shoulderLift + 0.03;
+    const thresholdUprightLift = baseline.shoulderLift - 0.02;
     const situpCooldownMs = 500;
     const situpMinRepMs = 160;
 
