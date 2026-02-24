@@ -1101,7 +1101,8 @@
 
     // 腹筋は「寝姿勢」の基準を取ってから判定しないと、雑な体動で誤カウントしやすい
     if (!state.situpBaseline) {
-      const isCalibrationPose = hipAngle >= 145 && torsoTilt <= 40;
+      // 端末角度や膝の曲げ具合で値がかなり変わるので、初期姿勢の条件は広めに取る
+      const isCalibrationPose = hipAngle >= 120 && torsoTilt <= 70;
       if (!isCalibrationPose) {
         state.calibrationBuffer = [];
         state.isSquatting = false;
@@ -1114,7 +1115,7 @@
       if (state.calibrationBuffer.length > 15) state.calibrationBuffer.shift();
       updateStatus(t('status_calibrating'));
 
-      if (state.calibrationBuffer.length < 10) return;
+      if (state.calibrationBuffer.length < 8) return;
 
       const hipValues = state.calibrationBuffer.map(s => s.hipAngle);
       const liftValues = state.calibrationBuffer.map(s => s.shoulderLift);
@@ -1123,7 +1124,7 @@
       const liftSpan = Math.max(...liftValues) - Math.min(...liftValues);
       const tiltSpan = Math.max(...tiltValues) - Math.min(...tiltValues);
 
-      if (hipSpan > 10 || liftSpan > 0.06 || tiltSpan > 12) return;
+      if (hipSpan > 22 || liftSpan > 0.12 || tiltSpan > 20) return;
 
       state.situpBaseline = {
         hipAngle: hipValues.reduce((a, b) => a + b, 0) / hipValues.length,
@@ -1142,14 +1143,14 @@
     }
 
     const baseline = state.situpBaseline;
-    const thresholdUpHip = Math.max(100, Math.min(125, baseline.hipAngle - 28));
-    const thresholdDownHip = Math.max(142, baseline.hipAngle - 10);
-    const thresholdUpLift = baseline.shoulderLift + 0.10;
-    const thresholdDownLift = baseline.shoulderLift + 0.05;
-    const thresholdUpTilt = Math.max(35, baseline.torsoTilt + 18);
-    const thresholdDownTilt = Math.max(20, baseline.torsoTilt + 8);
-    const situpCooldownMs = 700;
-    const situpMinRepMs = 220;
+    const thresholdUpHip = Math.max(88, Math.min(130, baseline.hipAngle - 20));
+    const thresholdDownHip = Math.max(thresholdUpHip + 10, baseline.hipAngle - 6);
+    const thresholdUpLift = baseline.shoulderLift + 0.07;
+    const thresholdDownLift = baseline.shoulderLift + 0.03;
+    const thresholdUpTilt = Math.min(85, Math.max(26, baseline.torsoTilt + 12));
+    const thresholdDownTilt = Math.min(thresholdUpTilt - 4, Math.max(16, baseline.torsoTilt + 5));
+    const situpCooldownMs = 500;
+    const situpMinRepMs = 160;
 
     const reachedUp =
       hipAngle <= thresholdUpHip &&
