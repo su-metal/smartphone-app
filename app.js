@@ -1096,13 +1096,13 @@
     }
 
     const now = Date.now();
-    const { hipAngle, shoulderLift, torsoTilt, side } = metrics;
+    const { shoulderLift, torsoTilt, side } = metrics;
     state._situpPreferredSide = side;
 
-    // 腹筋は「寝姿勢」の基準を取ってから判定しないと、雑な体動で誤カウントしやすい
+    // 腹筋は「横になった姿勢（胴体が比較的平行）」の基準を取ってから判定
     if (!state.situpBaseline) {
-      // 端末角度や膝の曲げ具合で値がかなり変わるので、初期姿勢の条件は広めに取る
-      const isCalibrationPose = hipAngle >= 120 && torsoTilt <= 70;
+      // 胴体がある程度水平に近いときだけキャリブレーションを進める
+      const isCalibrationPose = torsoTilt <= 78;
       if (!isCalibrationPose) {
         state.calibrationBuffer = [];
         state.isSquatting = false;
@@ -1111,23 +1111,20 @@
         return;
       }
 
-      state.calibrationBuffer.push({ hipAngle, shoulderLift, torsoTilt });
+      state.calibrationBuffer.push({ shoulderLift, torsoTilt });
       if (state.calibrationBuffer.length > 15) state.calibrationBuffer.shift();
       updateStatus(t('status_calibrating'));
 
       if (state.calibrationBuffer.length < 8) return;
 
-      const hipValues = state.calibrationBuffer.map(s => s.hipAngle);
       const liftValues = state.calibrationBuffer.map(s => s.shoulderLift);
       const tiltValues = state.calibrationBuffer.map(s => s.torsoTilt);
-      const hipSpan = Math.max(...hipValues) - Math.min(...hipValues);
       const liftSpan = Math.max(...liftValues) - Math.min(...liftValues);
       const tiltSpan = Math.max(...tiltValues) - Math.min(...tiltValues);
 
-      if (hipSpan > 22 || liftSpan > 0.12 || tiltSpan > 20) return;
+      if (liftSpan > 0.14 || tiltSpan > 24) return;
 
       state.situpBaseline = {
-        hipAngle: hipValues.reduce((a, b) => a + b, 0) / hipValues.length,
         shoulderLift: liftValues.reduce((a, b) => a + b, 0) / liftValues.length,
         torsoTilt: tiltValues.reduce((a, b) => a + b, 0) / tiltValues.length,
         side
@@ -1136,30 +1133,25 @@
       state.isSquatting = false;
       state._situpUpStartTs = 0;
       debugLog(
-        `Situp baseline set (${side}) hip=${state.situpBaseline.hipAngle.toFixed(1)}, ` +
-        `lift=${state.situpBaseline.shoulderLift.toFixed(3)}, tilt=${state.situpBaseline.torsoTilt.toFixed(1)}`
+        `Situp baseline set (${side}) lift=${state.situpBaseline.shoulderLift.toFixed(3)}, ` +
+        `tilt=${state.situpBaseline.torsoTilt.toFixed(1)}`
       );
       return;
     }
 
     const baseline = state.situpBaseline;
-    const thresholdUpHip = Math.max(88, Math.min(130, baseline.hipAngle - 20));
-    const thresholdDownHip = Math.max(thresholdUpHip + 10, baseline.hipAngle - 6);
-    const thresholdUpLift = baseline.shoulderLift + 0.07;
-    const thresholdDownLift = baseline.shoulderLift + 0.03;
-    const thresholdUpTilt = Math.min(85, Math.max(26, baseline.torsoTilt + 12));
-    const thresholdDownTilt = Math.min(thresholdUpTilt - 4, Math.max(16, baseline.torsoTilt + 5));
+    // 仕様: 胴体が平行に近づいたら「ピコッ」(ready)、起き上がったらカウント
+    const thresholdParallelTilt = Math.min(55, Math.max(14, baseline.torsoTilt + 12));
+    const thresholdUprightTilt = Math.min(88, Math.max(thresholdParallelTilt + 18, baseline.torsoTilt + 30));
+    // 起き上がり判定に軽い高さ条件を加える（腕位置ではなく肩-腰の相対位置）
+    const thresholdUprightLift = baseline.shoulderLift + 0.03;
     const situpCooldownMs = 500;
     const situpMinRepMs = 160;
 
-    const reachedUp =
-      hipAngle <= thresholdUpHip &&
-      shoulderLift >= thresholdUpLift &&
-      torsoTilt >= thresholdUpTilt;
-    const returnedDown =
-      hipAngle >= thresholdDownHip &&
-      shoulderLift <= thresholdDownLift &&
-      torsoTilt <= thresholdDownTilt;
+    const reachedParallel = torsoTilt <= thresholdParallelTilt;
+    const reachedUpright =
+      torsoTilt >= thresholdUprightTilt &&
+      shoulderLift >= thresholdUprightLift;
 
     if (!state._situpReadySpoken) {
       playSoundCount();
@@ -1169,19 +1161,19 @@
 
     if (!state._lastSitupLog || now - state._lastSitupLog > 1000) {
       debugLog(
-        `Situp(${side}) hip=${hipAngle.toFixed(1)} lift=${shoulderLift.toFixed(3)} tilt=${torsoTilt.toFixed(1)} ` +
-        `th=[U:${thresholdUpHip.toFixed(0)}/${thresholdUpLift.toFixed(3)}/${thresholdUpTilt.toFixed(0)} ` +
-        `D:${thresholdDownHip.toFixed(0)}/${thresholdDownLift.toFixed(3)}/${thresholdDownTilt.toFixed(0)}]`
+        `Situp(${side}) lift=${shoulderLift.toFixed(3)} tilt=${torsoTilt.toFixed(1)} ` +
+        `th=[parallel<=${thresholdParallelTilt.toFixed(0)} upright>=${thresholdUprightTilt.toFixed(0)} ` +
+        `lift>=${thresholdUprightLift.toFixed(3)}]`
       );
       state._lastSitupLog = now;
     }
 
-    if (!state.isSquatting && reachedUp && (now - state._lastSitupRepTs) >= situpCooldownMs) {
+    if (!state.isSquatting && reachedParallel && (now - state._lastSitupRepTs) >= situpCooldownMs) {
       state.isSquatting = true;
       state._situpUpStartTs = now;
       playSoundSquatDown();
-      updateStatus(t('status_go_down'));
-    } else if (state.isSquatting && returnedDown && (now - state._situpUpStartTs) >= situpMinRepMs) {
+      updateStatus(t('status_down'));
+    } else if (state.isSquatting && reachedUpright && (now - state._situpUpStartTs) >= situpMinRepMs) {
       state._lastSitupRepTs = now;
       countRep();
     } else if (state.isSquatting && state._situpUpStartTs && (now - state._situpUpStartTs) > 5000) {
@@ -1252,8 +1244,8 @@
 
   function getBestSitupMetrics(lm, preferredSide = null) {
     const sideDefs = [
-      { key: 'left', shoulder: 11, hip: 23, knee: 25 },
-      { key: 'right', shoulder: 12, hip: 24, knee: 26 }
+      { key: 'left', shoulder: 11, hip: 23 },
+      { key: 'right', shoulder: 12, hip: 24 }
     ];
     const ordered = preferredSide
       ? [preferredSide, preferredSide === 'left' ? 'right' : 'left']
@@ -1265,24 +1257,21 @@
       if (!side) continue;
       const shoulder = lm[side.shoulder];
       const hip = lm[side.hip];
-      const knee = lm[side.knee];
-      if (!shoulder || !hip || !knee) continue;
-
-      const hipAngle = getVisibleAngle(lm, side.shoulder, side.hip, side.knee, 0.45);
-      if (!Number.isFinite(hipAngle)) continue;
+      if (!shoulder || !hip) continue;
 
       const visShoulder = shoulder.visibility || 0;
       const visHip = hip.visibility || 0;
-      const visKnee = knee.visibility || 0;
-      const minVis = Math.min(visShoulder, visHip, visKnee);
+      const minVis = Math.min(visShoulder, visHip);
       if (minVis < 0.45) continue;
 
       const dx = shoulder.x - hip.x;
       const dy = shoulder.y - hip.y;
       const torsoTilt = Math.atan2(Math.abs(dy), Math.max(0.0001, Math.abs(dx))) * 180 / Math.PI; // 0=横, 90=縦
       const shoulderLift = hip.y - shoulder.y; // +ほど肩が腰より上
-      const score = (minVis * 2) + ((visShoulder + visHip + visKnee) / 3);
-      const candidate = { side: key, hipAngle, torsoTilt, shoulderLift, score };
+      const torsoLen = Math.hypot(dx, dy);
+      if (!Number.isFinite(torsoLen) || torsoLen < 0.03) continue;
+      const score = (minVis * 2) + ((visShoulder + visHip) / 2) + Math.min(0.3, torsoLen);
+      const candidate = { side: key, torsoTilt, shoulderLift, torsoLen, score };
 
       if (!best || candidate.score > best.score) {
         best = candidate;
